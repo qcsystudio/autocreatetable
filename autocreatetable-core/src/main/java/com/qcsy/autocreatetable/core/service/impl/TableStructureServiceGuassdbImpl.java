@@ -1,14 +1,14 @@
 package com.qcsy.autocreatetable.core.service.impl;
 
-import com.cstc.sonep.commoninfo.bizmodules.tablecreate.dao.DbTableDao;
-import com.cstc.sonep.commoninfo.bizmodules.tablecreate.service.TableStructureService;
-import com.cstc.sonep.commoninfo.helper.ConfigHelper;
-import com.cstc.sonep.micro.common.helper.DAOHelper;
-import com.cstc.sonep.micro.common.util.StringUtil;
-import com.cstc.sonep.micro.frame.jpa.repository.NativeSQL;
+import cn.hutool.core.map.MapUtil;
+import com.qcsy.autocreatetable.core.domain.TableInfo;
+import com.qcsy.autocreatetable.core.helper.SqlHelper;
+import com.qcsy.autocreatetable.core.service.TableStructureService;
+import com.qcsy.autocreatetable.core.utils.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -19,63 +19,73 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Description: guassdb 华为高斯 表结构创建服务类
- * Copyright: © 2023 CSTC. All rights reserved.
- * Department:交通信息化部
+ * Description: about huawei guassdb table structure service
  *
- * @author luoxiaojian
+ * @author qcsy
  * @version 2023/11/6
  */
 @Slf4j
 @Service("table-structure-guassdb")
-@ConditionalOnProperty(value = "lms.tablecreate.auto_enable",matchIfMissing = false)
 public class TableStructureServiceGuassdbImpl implements TableStructureService {
-    private final static String LOG_TITLE="【自动创建月表:GUASSDB】";
+    private final static String LOG_TITLE="【auto create table:GUASSDB】";
     private final static String TABLE_SUFFIX_RGX="(_)([1-2][0,9][0-9]{4})";
     private final static Pattern TABLE_SUFFIX_PATTERN=Pattern.compile(TABLE_SUFFIX_RGX);
-
     @Autowired
-    private ConfigHelper configHelper;
+    private JdbcTemplate jdbcTemplate;
     /**
-     * 获取已经存在的表列表
-     * @param schema 表空间
-     * @param tableName 表名
-     * @return 表列表
+     * get exists tables by table info
+     * @param schema database schema
+     * @param tableInfo tableInfo
+     * @return exists tables
      */
     @Override
-    public List<String> getExistsTables(String schema, String tableName) {
-        String sql = DAOHelper.getSQL(DbTableDao.class, "query_tablenames",configHelper.getDialectDBType());
+    public List<String> getExistsTables(String schema, TableInfo tableInfo) {
+
+        String sql = SqlHelper.getSql("query_tablenames");
+        String tableName = StringUtil.replaceStance(tableInfo.getTableNameExtension(),"%") ;
         //替换sql式内
         sql = StringUtil.replaceStance(sql,schema, tableName);
-        List<String> tableList = NativeSQL.findByNativeSQL(sql, null).stream().map((a) -> {
-            return a.get("tableName") + "";
+        Pattern pattern = Pattern.compile(String.format("^%s$",StringUtil.replaceStance(tableInfo.getTableNameExtension(),tableInfo.getSuffixPattern())));
+        List<String> tableList = jdbcTemplate.queryForList(sql).stream().map((a) -> {
+            Map node= MapUtil.toCamelCaseMap(a);
+            return node.get("tableName") + "";
+        }).filter((a) -> {
+            return pattern.matcher(a).find();
         }).collect(Collectors.toList());
         return tableList;
     }
     /**
-     * 获取建表sql
-     * @param tableName 表名
-     * @param createTableName 创建表的建表语句
-     * @return 建表sql
+     *  get create table sql
+     * @param schema db schema
+     * @param structureTablename structure table name
+     * @param createTableName target table name
+     * @param tableSuffix  table suffix
+     * @param tableInfo tableInfo
+     * @return result
      */
     @Override
-    public List<String> getCreateTableSql(String schema, String tableName,String createTableName,String tableSuffix) {
-        String sql = DAOHelper.getSQL(DbTableDao.class, "query_table_createsql",configHelper.getDialectDBType());
-        sql = StringUtil.replaceStance(sql,tableSuffix, tableName);
+    public List<String> getCreateTableSql(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
+        String sql =SqlHelper.getSql("query_table_createsql");
+        sql = StringUtil.replaceStance(sql,createTableName, structureTablename);
         List<String> result=new ArrayList<>();
         result.add(sql);
         return result;
     }
     /**
-     * 获取建索引语句列表
-     * @param consultTableName 参考表名
-     * @return 表名
+     *  get create index sql
+     * @param schema db schema
+     * @param structureTablename structure table name
+     * @param createTableName target table name
+     * @param tableSuffix  table suffix
+     * @param tableInfo tableInfo
+     * @return result
      */
     @Override
-    public List<String> getCreateIndexSqls(String schema,String consultTableName, String createTableName,String tableSuffix) {
-        String queryIndexNameSql =StringUtil.replaceStance(DAOHelper.getSQL(DbTableDao.class, "query_table_indexs",configHelper.getDialectDBType()),schema, consultTableName);
-        List<Map> indexs=NativeSQL.findByNativeSQL(queryIndexNameSql, null);
-        return indexs.stream().map((Map node)->{
+    public List<String> getCreateIndexSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo){
+        String queryIndexNameSql =StringUtil.replaceStance(SqlHelper.getSql("query_table_indexs"),schema, structureTablename);
+        List<Map<String, Object>> indexs=jdbcTemplate.queryForList(queryIndexNameSql);
+        return indexs.stream().map((Map a)->{
+            Map node=MapUtil.toCamelCaseMap(a);
             String indexName=node.get("indexName")+"";
             //处理月表后缀
             indexName=indexName.replaceAll(TABLE_SUFFIX_RGX,"_"+tableSuffix);
@@ -96,22 +106,24 @@ public class TableStructureServiceGuassdbImpl implements TableStructureService {
     }
 
     /**
-     * 获取触发器建表语句列表
-     * @param schema 表空间
-     * @param consultTableName 参考表名
-     * @param createTableName 创建表名
-     * @return
+     *  get create trigger sql
+     * @param schema db schema
+     * @param structureTablename structure table name
+     * @param createTableName target table name
+     * @param tableSuffix  table suffix
+     * @param tableInfo tableInfo
+     * @return result
      */
-    @Override
-    public List<String> getCreateTriggerSqls(String schema,String consultTableName, String createTableName,String tableSuffix) {
-        String queryTriggerNameSql = StringUtil.replaceStance(DAOHelper.getSQL(DbTableDao.class, "query_table_triggers"),schema, consultTableName);
-        List<String> triggerNameList = NativeSQL.findByNativeSQL(queryTriggerNameSql, null).stream().map((a) -> {
+    public List<String> getCreateTriggerSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
+        String queryTriggerNameSql = StringUtil.replaceStance(SqlHelper.getSql("query_table_triggers"),schema, structureTablename);
+        List<String> triggerNameList =jdbcTemplate.queryForList(queryTriggerNameSql).stream().map((a) -> {
+            Map node=MapUtil.toCamelCaseMap(a);
             return a.get("triggerName") + "";
         }).collect(Collectors.toList());
         List<String> createTriggerSqlList = new ArrayList<>();
-        String queryCreateTriggerSqlByTriggerName = DAOHelper.getSQL(DbTableDao.class, "query_table_triggercreate");
+        String queryCreateTriggerSqlByTriggerName = SqlHelper.getSql( "query_table_triggercreate");
         for (String triggerName : triggerNameList) {
-            List<String> createTriggerSqlRowList = NativeSQL.findByNativeSQL(StringUtil.replaceStance(queryCreateTriggerSqlByTriggerName, triggerName), null).stream().map((a) -> {
+            List<String> createTriggerSqlRowList =jdbcTemplate.queryForList(StringUtil.replaceStance(queryCreateTriggerSqlByTriggerName, triggerName)).stream().map((a) -> {
                 return a.get("sql original statement") + "";
             }).collect(Collectors.toList());
             createTriggerSqlList.addAll(createTriggerSqlRowList.stream().map((a)->{return a.replaceAll(TABLE_SUFFIX_RGX,""+tableSuffix);}).collect(Collectors.toList()));
@@ -119,30 +131,15 @@ public class TableStructureServiceGuassdbImpl implements TableStructureService {
         return createTriggerSqlList;
     }
     /**
-     * 查询唯一键，主键sql
-     * @param schema 表空间
-     * @param consultTableName 参考表名
-     * @param createTableName 创建表名
-     * @return 建表语句
+     *  get create unique sql
+     * @param schema db schema
+     * @param structureTablename structure table name
+     * @param createTableName target table name
+     * @param tableSuffix  table suffix
+     * @param tableInfo tableInfo
+     * @return result
      */
-    @Override
-    public List<String> getCreateUniqueSqls(String schema,String consultTableName, String createTableName,String tableSuffix) {
+    public List<String> getCreateUniqueSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
         return new ArrayList<>();
-    }
-    /**
-     * 替换sql里面的 删除、更新语句，避免未知的修改原有表结构的风险
-     * @param sql 原有sql
-     * @return 目标数据
-     */
-    private String safeSql(String sql){
-        String result=sql.replace("drop table","")
-                .replace("DROP TABLE","")
-                .replace("delete from","")
-                .replace("DELETE FROM","")
-                .replace("TRUNCATE ","")
-                .replace("truncate ","")
-                .replace("update ","")
-                .replace("UPDATE ","");
-        return result;
     }
 }

@@ -1,5 +1,7 @@
 package com.qcsy.autocreatetable.core.service;
 
+import com.qcsy.autocreatetable.core.domain.TableInfo;
+
 import java.util.List;
 
 /**
@@ -13,43 +15,54 @@ import java.util.List;
 public interface TableStructureService {
 
     /**
-     * 获取已经存在的表列表
-     * @param schema 表空间
-     * @param tableName 表名
-     * @return 表列表
+     * get exists tables by table info
+     * @param schema database schema
+     * @param tableInfo tableInfo
+     * @return exists tables
      */
-    List<String> getExistsTables(String schema,String tableName);
-    /**
-     * 获取建表sql
-     * @param consultTableName 参考表名
-     * @param createTableName 创建表的建表语句
-     * @return 建表sql
-     */
-    List<String> getCreateTableSql(String schema,String consultTableName,String createTableName,String tableSuffix);
+    List<String> getExistsTables(String schema, TableInfo tableInfo);
 
     /**
-     * 获取建索引语句列表
-     * @param consultTableName 参考表名
-     * @param createTableName 创建表名
-     * @return 表名
+     *  get create table sql
+     * @param schema db schema
+     * @param structureTablename structure table name
+     * @param createTableName target table name
+     * @param tableSuffix  table suffix
+     * @param tableInfo tableInfo
+     * @return result
      */
-    List<String> getCreateIndexSqls(String schema,String consultTableName,String createTableName,String tableSuffix);
+    List<String> getCreateTableSql(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo);
 
     /**
-     * 获取触发器建表语句列表
-     * @param schema 表空间
-     * @param consultTableName 参考表名
-     * @param createTableName 创建表名
-     * @return
+     *  get create index sql
+     * @param schema db schema
+     * @param structureTablename structure table name
+     * @param createTableName target table name
+     * @param tableSuffix  table suffix
+     * @param tableInfo tableInfo
+     * @return result
      */
-    List<String> getCreateTriggerSqls(String schema,String consultTableName,String createTableName,String tableSuffix);
+    List<String> getCreateIndexSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo);
 
     /**
-     * 查询唯一键，主键sql
-     * @param schema 表空间
-     * @param consultTableName 参考表名
-     * @param createTableName 创建表名
-     * @return 建表语句
+     *  get create trigger sql
+     * @param schema db schema
+     * @param structureTablename structure table name
+     * @param createTableName target table name
+     * @param tableSuffix  table suffix
+     * @param tableInfo tableInfo
+     * @return result
      */
-    List<String> getCreateUniqueSqls(String schema,String consultTableName,String createTableName,String tableSuffix);
+    List<String> getCreateTriggerSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo);
+
+    /**
+     *  get create unique sql
+     * @param schema db schema
+     * @param structureTablename structure table name
+     * @param createTableName target table name
+     * @param tableSuffix  table suffix
+     * @param tableInfo tableInfo
+     * @return result
+     */
+    List<String> getCreateUniqueSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo);
 }

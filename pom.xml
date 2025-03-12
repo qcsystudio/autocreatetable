@@ -24,7 +24,8 @@
         <spring-boot.version>3.4.3</spring-boot.version>
         <fastjson.version>2.0.53</fastjson.version>
         <mysql.version>8.0.33</mysql.version>
-        <hutool.version>5.8.34</hutool.version>
+        <hutool.version>5.8.36</hutool.version>
+        <dom4j.version>2.1.4</dom4j.version>
     </properties>
 
     <dependencies>
@@ -64,10 +65,13 @@
             </dependency>
             <dependency>
                 <groupId>cn.hutool</groupId>
-                <artifactId>hutool-bom</artifactId>
+                <artifactId>hutool-core</artifactId>
                 <version>${hutool.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.dom4j</groupId>
+                <artifactId>dom4j</artifactId>
+                <version>${dom4j.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

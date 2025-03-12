@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+    <!--查询所有表名-->
+    <sql id="query_tablenames">
+        <common>
+            <![CDATA[
+            select table_name from information_schema.tables where table_schema='${tableSchema}' and upper(table_name) like '${tableName}%'
+            ]]>
+        </common>
+        <oracle>
+            <![CDATA[
+                SELECT TABLE_NAME FROM USER_TABLES WHERE UPPER(TABLE_NAME) LIKE '${tableName}%' ORDER BY TABLE_NAME DESC
+            ]]>
+        </oracle>
+    </sql>
+    <!--查询依据表是否存在-->
+    <sql id="query_table_exist">
+        <common>
+            select 1 from information_schema.tables where table_schema='${tableSchema}' and upper(table_name) like '${tableName}%'
+        </common>
+        <oracle>
+            <![CDATA[
+                select 1 from user_tables where UPPER(table_name) ='${tableName}'
+            ]]>
+        </oracle>
+    </sql>
+
+    <!--获取表的创建语句-->
+    <sql id="query_table_createsql">
+        <common>
+            <![CDATA[
+             show create table ${tableName}
+            ]]>
+        </common>
+        <oracle>
+            <![CDATA[
+                SELECT dbms_metadata.get_ddl('TABLE', '${tableName}' ) AS TABLE_NAME FROM DUAL
+            ]]>
+        </oracle>
+        <guassdb>
+            <![CDATA[
+                CREATE table ${targetTable} as table ${tablename}
+            ]]>
+        </guassdb>
+    </sql>
+    <!--获取字段备注-->
+    <sql id="query_table_comments">
+        <oracle>
+            <![CDATA[
+                  SELECT TABLE_NAME,COLUMN_NAME,COMMENTS from user_col_comments where table_name = '${tableName}' and COMMENTS IS NOT NULL
+            ]]>
+        </oracle>
+    </sql>
+
+    <!--查询索引信息-->
+    <sql id="query_table_indexs">
+        <common>
+            <![CDATA[
+             SELECT index_name,column_name FROM INFORMATION_SCHEMA.statistics WHERE table_schema = '${tableSchema}' AND upper(table_name) = '${tableName}' and upper(column_name)!='ID'
+            ]]>
+        </common>
+        <oracle>
+            <![CDATA[
+              SELECT ui.INDEX_NAME,uic.column_name FROM USER_INDEXES ui LEFT JOIN user_ind_columns uic ON ui.INDEX_NAME=uic.INDEX_NAME
+               WHERE ui.table_name = '${tableName}' and ui.uniqueness !='UNIQUE'
+            ]]>
+        </oracle>
+        <guassdb>
+            <![CDATA[
+                SELECT i.indexname as index_name, indisunique, indisprimary, ai.attname as column_name
+                  FROM pg_tables t
+                  JOIN pg_namespace n
+                    ON t.schemaname = n.nspname
+                  LEFT JOIN pg_indexes i
+                    ON t.schemaname = i.schemaname
+                   AND t.tablename = i.tablename
+                  LEFT JOIN pg_class ci
+                    ON i.indexname = ci.relname
+                   AND n.oid = ci.relnamespace
+                  LEFT JOIN pg_index ii
+                    ON ci.oid = ii.indexrelid
+                  LEFT JOIN pg_attribute ai
+                    ON ci.oid = ai.attrelid
+                WHERE  t.schemaname = '${tableSchema}'
+                     and  upper(t.tablename) = upper('${tableName}')
+                ORDER BY t.tablename, i.indexname, ai.attname;
+            ]]>
+        </guassdb>
+    </sql>
+    <sql id="query_table_indexscreate">
+        <oracle>
+            <![CDATA[
+             select dbms_metadata.get_ddl('INDEX', '${indexName}' ) as index_sql from dual
+            ]]>
+        </oracle>
+    </sql>
+
+    <!--查询唯一约束信息-->
+    <sql id="query_table_constraint">
+        <oracle>
+            <![CDATA[
+              select au.constraint_name,cu.column_name from user_constraints au LEFT JOIN user_cons_columns cu on cu.constraint_name = au.constraint_name
+              where au.constraint_type  in ('U','P') and au.table_name = '${tableName}'
+            ]]>
+        </oracle>
+    </sql>
+    <sql id="query_table_constraintcreate">
+        <oracle>
+            <![CDATA[
+              select dbms_metadata.get_ddl('CONSTRAINT', '${constraintName}' ) as index_sql from dual
+            ]]>
+        </oracle>
+    </sql>
+
+    <!--查询触发器信息-->
+    <sql id="query_table_triggers">
+        <common>
+            SELECT TRIGGER_NAME FROM information_schema.triggers WHERE TRIGGER_SCHEMA = '${tableSchema}' AND upper(EVENT_OBJECT_TABLE)  = '${tableName}';
+        </common>
+        <oracle>
+            <![CDATA[
+             select trigger_name from all_triggers where table_name='${tableName}'
+            ]]>
+        </oracle>
+    </sql>
+    <sql id="query_table_triggercreate">
+        <oracle>
+            <![CDATA[
+            select a.text as a from all_source a where type='TRIGGER' AND name='triggerName' ORDER BY line
+            ]]>
+        </oracle>
+        <mysql>
+            SHOW CREATE TRIGGER ${triggerName};
+        </mysql>
+        <postgresql>
+            SHOW CREATE TRIGGER ${triggerName};
+        </postgresql>
+    </sql>
+</mapper>

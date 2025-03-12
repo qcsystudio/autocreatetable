@@ -1,61 +1,73 @@
 package com.qcsy.autocreatetable.core.service.impl;
 
-import com.cstc.sonep.commoninfo.bizmodules.tablecreate.dao.DbTableDao;
-import com.cstc.sonep.commoninfo.bizmodules.tablecreate.service.TableStructureService;
-import com.cstc.sonep.micro.common.helper.DAOHelper;
-import com.cstc.sonep.micro.common.util.StringUtil;
-import com.cstc.sonep.micro.frame.jpa.repository.NativeSQL;
+import cn.hutool.core.map.MapUtil;
+import com.qcsy.autocreatetable.core.domain.TableInfo;
+import com.qcsy.autocreatetable.core.helper.SqlHelper;
+import com.qcsy.autocreatetable.core.service.TableStructureService;
+import com.qcsy.autocreatetable.core.utils.DbUtil;
+import com.qcsy.autocreatetable.core.utils.StringUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Description: oracle表结构创建服务类
- * Copyright: © 2023 CSTC. All rights reserved.
- * Department:交通信息化部
+ * Description: oracle table structure service
  *
- * @author luoxiaojian
+ * @author qcsy
  * @version 2023/11/6
  */
 @Slf4j
 @Service("table-structure-oracle")
-@ConditionalOnProperty(value = "lms.tablecreate.auto_enable",matchIfMissing = false)
 public class TableStructureServiceOracleImpl implements TableStructureService {
-    private final static String LOG_TITLE="【自动创建月表:ORACLE】";
+    private final static String LOG_TITLE="【auto create table:ORACLE】";
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
     /**
-     * 获取已经存在的表列表
-     * @param schema 表空间
-     * @param tableName 表名
-     * @return 表列表
+     * get exists tables by table info
+     * @param schema database schema
+     * @param tableInfo tableInfo
+     * @return exists tables
      */
     @Override
-    public List<String> getExistsTables(String schema, String tableName) {
-        String sql = DAOHelper.getSQL(DbTableDao.class, "query_tablenames");
+    public List<String> getExistsTables(String schema, TableInfo tableInfo) {
+        String sql = SqlHelper.getSql("query_tablenames");
+        String tableName = StringUtil.replaceStance(tableInfo.getTableNameExtension(),"%") ;
         //替换sql式内
-        sql = StringUtil.replaceStance(sql, tableName);
-        List<String> tableList = NativeSQL.findByNativeSQL(sql, null).stream().map((a) -> {
-            return a.get("tableName") + "";
+        sql = StringUtil.replaceStance(sql,schema, tableName);
+        Pattern pattern = Pattern.compile(String.format("^%s$",StringUtil.replaceStance(tableInfo.getTableNameExtension(),tableInfo.getSuffixPattern())));
+        List<String> tableList = jdbcTemplate.queryForList(sql).stream().map((a) -> {
+            Map node= MapUtil.toCamelCaseMap(a);
+            return node.get("tableName") + "";
+        }).filter((a) -> {
+            return pattern.matcher(a).find();
         }).collect(Collectors.toList());
         return tableList;
     }
     /**
-     * 获取建表sql
-     * @param tableName 表名
-     * @param createTableName 创建表的建表语句
-     * @return 建表sql
+     *  get create table sql
+     * @param schema db schema
+     * @param structureTablename structure table name
+     * @param createTableName target table name
+     * @param tableSuffix  table suffix
+     * @param tableInfo tableInfo
+     * @return result
      */
     @Override
-    public List<String> getCreateTableSql(String schema, String tableName,String createTableName,String tableSuffix) {
-        String createQuerySql = DAOHelper.getSQL(DbTableDao.class, "query_table_createsql");
-        createQuerySql = StringUtil.replaceStance(createQuerySql, tableName);
-        List<String> createTableSqlList = NativeSQL.findByNativeSQL(createQuerySql, null).stream().map((a) -> {
-            return a.get("tableName") + "";
+    public  List<String> getCreateTableSql(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo){
+        String createQuerySql =SqlHelper.getSql( "query_table_createsql");
+        createQuerySql = StringUtil.replaceStance(createQuerySql, structureTablename);
+        List<String> createTableSqlList = jdbcTemplate.queryForList(createQuerySql).stream().map((a) -> {
+            Map node= MapUtil.toCamelCaseMap(a);
+            return node.get("tableName") + "";
         }).collect(Collectors.toList());
         String createTableSql = createTableSqlList.get(0);
         //建表语句
@@ -63,14 +75,15 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
             createTableSql = createTableSql.substring(0, createTableSql.indexOf("CONSTRAINT"))
                     + createTableSql.substring(createTableSql.indexOf("PRIMARY"));
         }
-        List<Map> columCommentList = NativeSQL.findByNativeSQL(StringUtil.replaceStance(DAOHelper.getSQL(DbTableDao.class, "query_table_comments"), tableName), null);
+        List<Map<String, Object>> columCommentList = jdbcTemplate.queryForList(StringUtil.replaceStance(SqlHelper.getSql( "query_table_comments"), structureTablename));
         List<String> result=new ArrayList<>();
         result.add(createTableSql);
-        columCommentList.stream().forEach((Map node)->{
+        columCommentList.stream().forEach((Map a)->{
+            Map node= MapUtil.toCamelCaseMap(a);
             //增加描述
             String addCommentSql = "COMMENT ON COLUMN %s.%s IS '%s'";
             try {
-                String finalCommontSql=safeSql(String.format(addCommentSql, createTableName, node.get("columnName"), node.get("comments")));
+                String finalCommontSql=DbUtil.safeSql(String.format(addCommentSql, createTableName, node.get("columnName"), node.get("comments")));
                 log.info("{}添加字段描述:[{}]",LOG_TITLE,finalCommontSql);
                 result.add(finalCommontSql);
             } catch (Exception e) {
@@ -80,15 +93,22 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
         return result;
     }
     /**
-     * 获取建索引语句列表
-     * @param consultTableName 参考表名
-     * @return 表名
+     *  get create index sql
+     * @param schema db schema
+     * @param structureTablename structure table name
+     * @param createTableName target table name
+     * @param tableSuffix  table suffix
+     * @param tableInfo tableInfo
+     * @return result
      */
     @Override
-    public List<String> getCreateIndexSqls(String schema,String consultTableName, String createTableName,String tableSuffix) {
-        String queryIndexNameSql =StringUtil.replaceStance(DAOHelper.getSQL(DbTableDao.class, "query_table_indexs"), consultTableName);
-        Map<String, String> indexNames = NativeSQL.findByNativeSQL(queryIndexNameSql, null)
-                .stream().collect(Collectors.toMap((k) -> {
+    public List<String> getCreateIndexSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo){
+        String queryIndexNameSql =StringUtil.replaceStance(SqlHelper.getSql( "query_table_indexs"), structureTablename);
+        Map<String, String> indexNames = jdbcTemplate.queryForList(queryIndexNameSql)
+                .stream().map((a)->{
+                    Map node= MapUtil.toCamelCaseMap(a);
+                    return node;
+                }).collect(Collectors.toMap((k) -> {
                     return k.get("indexName") + "";
                 }, (v) -> {
                     return v.get("columnName") + "";
@@ -96,9 +116,9 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
                     return b;
                 }));
         List<String> tableIndexSql=new ArrayList<>();
-        String queryCreateIndexSqlByIndexName = DAOHelper.getSQL(DbTableDao.class, "query_table_indexscreate");
+        String queryCreateIndexSqlByIndexName =SqlHelper.getSql( "query_table_indexscreate");
         for (String indexName : indexNames.keySet()) {
-            List<String> createIndexSqls = NativeSQL.findByNativeSQL(StringUtil.replaceStance(queryCreateIndexSqlByIndexName, indexName), null).stream().map((a) -> {
+            List<String> createIndexSqls =jdbcTemplate.queryForList(StringUtil.replaceStance(queryCreateIndexSqlByIndexName, indexName)).stream().map((a) -> {
                 return a.get("indexSql") + "";
             }).collect(Collectors.toList());
             if (createIndexSqls.size() > 0) {
@@ -109,24 +129,27 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
     }
 
     /**
-     * 获取触发器建表语句列表
-     * @param schema 表空间
-     * @param consultTableName 参考表名
-     * @param createTableName 创建表名
-     * @return
+     *  get create trigger sql
+     * @param schema db schema
+     * @param structureTablename structure table name
+     * @param createTableName target table name
+     * @param tableSuffix  table suffix
+     * @param tableInfo tableInfo
+     * @return result
      */
-    @Override
-    public List<String> getCreateTriggerSqls(String schema,String consultTableName, String createTableName,String tableSuffix) {
-        String queryTriggerNameSql = StringUtil.replaceStance(DAOHelper.getSQL(DbTableDao.class, "query_table_triggers"), consultTableName);
+    public List<String> getCreateTriggerSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
+        String queryTriggerNameSql = StringUtil.replaceStance(SqlHelper.getSql( "query_table_triggers"), structureTablename);
 
-        List<String> triggerNameList = NativeSQL.findByNativeSQL(queryTriggerNameSql, null).stream().map((a) -> {
-            return a.get("triggerName") + "";
+        List<String> triggerNameList = jdbcTemplate.queryForList(queryTriggerNameSql).stream().map((a) -> {
+            Map node= MapUtil.toCamelCaseMap(a);
+            return node.get("triggerName") + "";
         }).collect(Collectors.toList());
         List<String> createTriggerSqlList = new ArrayList<>();
-        String queryCreateTriggerSqlByTriggerName = DAOHelper.getSQL(DbTableDao.class, "query_table_triggercreate");
+        String queryCreateTriggerSqlByTriggerName = SqlHelper.getSql( "query_table_triggercreate");
         for (String triggerName : triggerNameList) {
-            List<String> createTriggerSqlRowList = NativeSQL.findByNativeSQL(StringUtil.replaceStance(queryCreateTriggerSqlByTriggerName, triggerName), null).stream().map((a) -> {
-                return a.get("a") + "";
+            List<String> createTriggerSqlRowList = jdbcTemplate.queryForList(StringUtil.replaceStance(queryCreateTriggerSqlByTriggerName, triggerName)).stream().map((a) -> {
+                Map node= MapUtil.toCamelCaseMap(a);
+                return node.get("a") + "";
             }).collect(Collectors.toList());
             StringBuilder stringBuilder = new StringBuilder("CREATE ");
             for (String createTriggerSqlRow : createTriggerSqlRowList) {
@@ -134,34 +157,38 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
             }
             String triggerSql=stringBuilder.toString().
                     replace(triggerName, triggerName + createTableName.substring(createTableName.lastIndexOf("_"))).
-                    replace(consultTableName.toUpperCase(), createTableName.toUpperCase());
-            createTriggerSqlList.add(safeSql(triggerSql));
+                    replace(structureTablename.toUpperCase(), createTableName.toUpperCase());
+            createTriggerSqlList.add(DbUtil.safeSql(triggerSql));
         }
         return createTriggerSqlList;
     }
     /**
-     * 查询唯一键，主键sql
-     * @param schema 表空间
-     * @param consultTableName 参考表名
-     * @param createTableName 创建表名
-     * @return 建表语句
+     *  get create unique sql
+     * @param schema db schema
+     * @param structureTablename structure table name
+     * @param createTableName target table name
+     * @param tableSuffix  table suffix
+     * @param tableInfo tableInfo
+     * @return result
      */
-    @Override
-    public List<String> getCreateUniqueSqls(String schema,String consultTableName, String createTableName,String tableSuffix) {
-        String queryConstraintNameSql = StringUtil.replaceStance(DAOHelper.getSQL(DbTableDao.class, "query_table_constraint"), consultTableName);
-        Map<String, String> constraintNames = NativeSQL.findByNativeSQL(queryConstraintNameSql, null)
-                .stream().collect(Collectors.toMap((k) -> {
+    public List<String> getCreateUniqueSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
+        String queryConstraintNameSql = StringUtil.replaceStance(SqlHelper.getSql( "query_table_constraint"), structureTablename);
+        Map<String, String> constraintNames = jdbcTemplate.queryForList(queryConstraintNameSql)
+                .stream().map((a) -> {
+                    return MapUtil.toCamelCaseMap(a);
+                }).collect(Collectors.toMap((k) -> {
                     return k.get("constraintName") + "";
                 }, (v) -> {
                     return v.get("columnName") + "";
                 }, (a, b) -> {
                     return b;
                 }));
-        String queryCreateConstraintSqlByName = DAOHelper.getSQL(DbTableDao.class, "query_table_constraintcreate");
+        String queryCreateConstraintSqlByName = SqlHelper.getSql( "query_table_constraintcreate");
         List<String> result=new ArrayList<>();
         for (String name : constraintNames.keySet()) {
-            List<String> createIndexSqls = NativeSQL.findByNativeSQL(StringUtil.replaceStance(queryCreateConstraintSqlByName, name), null).stream().map((a) -> {
-                return a.get("indexSql") + "";
+            List<String> createIndexSqls =jdbcTemplate.queryForList(StringUtil.replaceStance(queryCreateConstraintSqlByName, name)).stream().map((a) -> {
+                Map node= MapUtil.toCamelCaseMap(a);
+                return node.get("indexSql") + "";
             }).collect(Collectors.toList());
             AtomicInteger index= new AtomicInteger();
             if (createIndexSqls.size() > 0) {
@@ -169,29 +196,13 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
                 String newName= abbreviationIndexName(createTableName)+"_CONS_" + constraintNames.get(name)+"_"+ index.getAndIncrement();
                 String createConstanceSql=createIndexSql.
                         replace(name, newName).
-                        replace(consultTableName, createTableName.toUpperCase());
+                        replace(structureTablename, createTableName.toUpperCase());
                 //替换创建索引的语句
                 createConstanceSql=createConstanceSql.replaceAll("(USING INDEX )([\\s\\S]*?ENABLE,{0,1})","ENABLE");
-                String finalSql=safeSql(createConstanceSql);
+                String finalSql= DbUtil.safeSql(createConstanceSql);
                 result.add(finalSql);
             }
         }
-        return result;
-    }
-    /**
-     * 替换sql里面的 删除、更新语句，避免未知的修改原有表结构的风险
-     * @param sql 原有sql
-     * @return 目标数据
-     */
-    private String safeSql(String sql){
-        String result=sql.replace("drop table","")
-                .replace("DROP TABLE","")
-                .replace("delete from","")
-                .replace("DELETE FROM","")
-                .replace("TRUNCATE ","")
-                .replace("truncate ","")
-                .replace("update ","")
-                .replace("UPDATE ","");
         return result;
     }
 

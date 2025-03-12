@@ -1,36 +1,32 @@
 package com.qcsy.autocreatetable.core.service;
 
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Description:  暂无
- * Copyright: © 2022 CSTC. All rights reserved.
- * Department:交通信息化部
+ * Description:  create table service
  *
- * @author luoxiaojian
+ * @author qcsy
  * @version 1.0 2022/4/2
  */
 public interface TableCreateService{
 
     /**
-     * 自动建表
-     * @return 建表列表
+     * reference table to create month table
+     * @param tableNameExtension target table name  expression
+     * @param startTime start time
+     * @param endTime end time
+     * @param referenceTableName reference table name. null or [max] means use max table. [min] means use min table.
      */
-    List<String> autoCreateTable();
-    /**
-     * 依据原有表创建月表
-     * @param tableName 表名
-     * @param tableSuffixs 表名后缀列表
-     * @param isUseMaxTable 是否使用最大的月表为基础进行创建表
-     */
-    List<String> createTable(String tableName, List<String> tableSuffixs, Boolean isUseMaxTable);
+    List<String> createTable(String tableNameExtension, LocalDateTime startTime, LocalDateTime endTime, String referenceTableName);
 
     /**
-     * 根据年和月表名创建月表。如果已经存在，则会跳过
-     * @param tableNames <table:表名，suffix:表后缀>
-     * @param year 年
-     * @return 创建的月表列表
+     * create table by year
+     * @param tableNameStructures target table names
+     * @param year year
+     * @return results
      */
-    List<String> createTableYears(Map<String,Object> tableNames, String year);
+    List<String> createTableYears(List<String> tableNameStructures, String year);
 }
