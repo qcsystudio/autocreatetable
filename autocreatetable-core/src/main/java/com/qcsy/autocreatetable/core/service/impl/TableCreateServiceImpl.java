@@ -113,7 +113,7 @@ public class TableCreateServiceImpl implements TableCreateService {
         for (String tableSuffix : tableSuffixs) {
             //target table name
             String createTableName=StringUtil.replaceStance(tableNameExtension,tableSuffix);
-            log.info("{}start create table ，target table：{} structure table：{}",LOG_TITLE,createTableName,structureTablename);
+            log.info("{}start create table ->target table：{} | structure table：{}",LOG_TITLE,createTableName,structureTablename);
             createTableByReferenceTable(structureTablename,createTableName,tableSuffix,tableInfo);
             createTableNames.add(createTableName);
         }
