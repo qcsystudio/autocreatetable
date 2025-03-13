@@ -9,7 +9,7 @@
         </common>
         <oracle>
             <![CDATA[
-                SELECT TABLE_NAME FROM USER_TABLES WHERE UPPER(TABLE_NAME) LIKE '${tableName}%' ORDER BY TABLE_NAME DESC
+                SELECT TABLE_NAME FROM USER_TABLES WHERE UPPER(TABLE_NAME) LIKE '${tableName}' ORDER BY TABLE_NAME DESC
             ]]>
         </oracle>
     </sql>
@@ -126,7 +126,7 @@
     <sql id="query_table_triggercreate">
         <oracle>
             <![CDATA[
-            select a.text as a from all_source a where type='TRIGGER' AND name='triggerName' ORDER BY line
+            select a.text as a from all_source a where type='TRIGGER' AND name='${triggerName}' ORDER BY line
             ]]>
         </oracle>
         <mysql>

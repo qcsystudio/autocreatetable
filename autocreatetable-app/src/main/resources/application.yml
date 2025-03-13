@@ -2,10 +2,18 @@ spring:
   application:
     name: autocreatetable
   jpa:
-    database: mysql
+    database: oracle
     show-sql: true
+#  datasource:
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+#    url: jdbc:mysql://10.17.31.7:35910/monitor_toll?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&rewriteBatchedStatements=true&serverTimezone=Asia/Shanghai
+#    username: monitor_toll
+#    password: monitor_toll@5885
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://10.17.31.7:35910/monitor_toll?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&rewriteBatchedStatements=true&serverTimezone=Asia/Shanghai
-    username: monitor_toll
-    password: monitor_toll@5885
+    driver-class-name: oracle.jdbc.driver.OracleDriver
+    url: jdbc:oracle:thin:@10.17.31.7:35930:ORCL
+    username: qh_audit
+    password: Csnt,5885
+
+tablecreate:
+  dbtype: oracle

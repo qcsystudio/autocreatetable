@@ -1,21 +1,24 @@
 package com.qcsy.autocreatetable.core.service.impl;
 
+import cn.hutool.core.map.CaseInsensitiveMap;
 import cn.hutool.core.map.MapUtil;
+import com.qcsy.autocreatetable.core.constant.CommonConstant;
 import com.qcsy.autocreatetable.core.domain.TableInfo;
 import com.qcsy.autocreatetable.core.helper.SqlHelper;
 import com.qcsy.autocreatetable.core.service.TableStructureService;
 import com.qcsy.autocreatetable.core.utils.DbUtil;
 import com.qcsy.autocreatetable.core.utils.StringUtil;
+import com.qcsy.autocreatetable.core.utils.UuidUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.UUID;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -42,7 +45,7 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
         String sql = SqlHelper.getSql("query_tablenames");
         String tableName = StringUtil.replaceStance(tableInfo.getTableNameExtension(),"%") ;
         //替换sql式内
-        sql = StringUtil.replaceStance(sql,schema, tableName);
+        sql = StringUtil.replaceStance(sql, tableName);
         Pattern pattern = Pattern.compile(String.format("^%s$",StringUtil.replaceStance(tableInfo.getTableNameExtension(),tableInfo.getSuffixPattern())));
         List<String> tableList = jdbcTemplate.queryForList(sql).stream().map((a) -> {
             Map node= MapUtil.toCamelCaseMap(a);
@@ -70,11 +73,16 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
             return node.get("tableName") + "";
         }).collect(Collectors.toList());
         String createTableSql = createTableSqlList.get(0);
-        //建表语句
-        if (createTableSql.contains("CONSTRAINT")) {
-            createTableSql = createTableSql.substring(0, createTableSql.indexOf("CONSTRAINT"))
-                    + createTableSql.substring(createTableSql.indexOf("PRIMARY"));
+        createTableSql=createTableSql.replaceAll("(?i)"+structureTablename, createTableName);
+        //替换CONSTRAINT
+        Pattern constrantPattern = Pattern.compile(" CONSTRAINT ([\\S]*)",Pattern.CASE_INSENSITIVE);
+        StringBuffer createTableSqlTemp = new StringBuffer();
+        Matcher matcher = constrantPattern.matcher(createTableSql);
+        while (matcher.find()) {
+            matcher.appendReplacement(createTableSqlTemp,String.format("CONSTRAINT \"CON_%s\"", UuidUtil.getUuid()) );
         }
+        matcher.appendTail(createTableSqlTemp);
+        createTableSql=createTableSqlTemp.toString();
         List<Map<String, Object>> columCommentList = jdbcTemplate.queryForList(StringUtil.replaceStance(SqlHelper.getSql( "query_table_comments"), structureTablename));
         List<String> result=new ArrayList<>();
         result.add(createTableSql);
@@ -117,9 +125,25 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
                 }));
         List<String> tableIndexSql=new ArrayList<>();
         String queryCreateIndexSqlByIndexName =SqlHelper.getSql( "query_table_indexscreate");
+        Pattern suffixPattern =null;
+        if(StringUtil.isNotBlank(tableSuffix)&&null!=tableInfo){
+            suffixPattern=Pattern.compile(tableInfo.getSuffixPattern());
+        }else{
+            suffixPattern=Pattern.compile("");
+        }
+        Pattern finalSuffixPattern = suffixPattern;
         for (String indexName : indexNames.keySet()) {
             List<String> createIndexSqls =jdbcTemplate.queryForList(StringUtil.replaceStance(queryCreateIndexSqlByIndexName, indexName)).stream().map((a) -> {
-                return a.get("indexSql") + "";
+                Map node= MapUtil.toCamelCaseMap(a);
+                String indexSql = node.get("indexSql") + "";
+                if(finalSuffixPattern.matcher(indexName).find()){
+                    String newIndexName=indexName.replaceAll(tableInfo.getSuffixPattern(),tableSuffix);
+                    indexSql=indexSql.replace(indexName,newIndexName);
+                }else{
+                    indexSql=indexSql.replace(indexName, UUID.randomUUID().toString().replace("-",""));
+                }
+                indexSql=indexSql.replaceAll("(?i)"+structureTablename, createTableName);
+                return indexSql;
             }).collect(Collectors.toList());
             if (createIndexSqls.size() > 0) {
                 tableIndexSql.add(createIndexSqls.get(0));
@@ -148,16 +172,26 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
         String queryCreateTriggerSqlByTriggerName = SqlHelper.getSql( "query_table_triggercreate");
         for (String triggerName : triggerNameList) {
             List<String> createTriggerSqlRowList = jdbcTemplate.queryForList(StringUtil.replaceStance(queryCreateTriggerSqlByTriggerName, triggerName)).stream().map((a) -> {
-                Map node= MapUtil.toCamelCaseMap(a);
+                Map node= new CaseInsensitiveMap(a);
                 return node.get("a") + "";
             }).collect(Collectors.toList());
             StringBuilder stringBuilder = new StringBuilder("CREATE ");
             for (String createTriggerSqlRow : createTriggerSqlRowList) {
                 stringBuilder.append(createTriggerSqlRow);
             }
-            String triggerSql=stringBuilder.toString().
-                    replace(triggerName, triggerName + createTableName.substring(createTableName.lastIndexOf("_"))).
-                    replace(structureTablename.toUpperCase(), createTableName.toUpperCase());
+            Pattern suffixPattern =null;
+            if(StringUtil.isNotBlank(tableSuffix)&&null!=tableInfo){
+                suffixPattern=Pattern.compile(tableInfo.getSuffixPattern());
+            }else{
+                suffixPattern=Pattern.compile("");
+            }
+            String triggerSql=stringBuilder.toString().replaceAll("(?i)"+structureTablename, createTableName);
+            if(suffixPattern.matcher(triggerName).find()){
+                String newIndexName=triggerName.replaceAll(tableInfo.getSuffixPattern(),tableSuffix);
+                triggerSql=triggerSql.replace(triggerName,newIndexName);
+            }else{
+                triggerSql=triggerSql.replace(triggerName, String.format("%s_%s", CommonConstant.TRIGGER_PREFIX,UuidUtil.getUuid() ));
+            }
             createTriggerSqlList.add(DbUtil.safeSql(triggerSql));
         }
         return createTriggerSqlList;
@@ -172,61 +206,49 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
      * @return result
      */
     public List<String> getCreateUniqueSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
-        String queryConstraintNameSql = StringUtil.replaceStance(SqlHelper.getSql( "query_table_constraint"), structureTablename);
-        Map<String, String> constraintNames = jdbcTemplate.queryForList(queryConstraintNameSql)
-                .stream().map((a) -> {
-                    return MapUtil.toCamelCaseMap(a);
-                }).collect(Collectors.toMap((k) -> {
-                    return k.get("constraintName") + "";
-                }, (v) -> {
-                    return v.get("columnName") + "";
-                }, (a, b) -> {
-                    return b;
-                }));
-        String queryCreateConstraintSqlByName = SqlHelper.getSql( "query_table_constraintcreate");
-        List<String> result=new ArrayList<>();
-        for (String name : constraintNames.keySet()) {
-            List<String> createIndexSqls =jdbcTemplate.queryForList(StringUtil.replaceStance(queryCreateConstraintSqlByName, name)).stream().map((a) -> {
-                Map node= MapUtil.toCamelCaseMap(a);
-                return node.get("indexSql") + "";
-            }).collect(Collectors.toList());
-            AtomicInteger index= new AtomicInteger();
-            if (createIndexSqls.size() > 0) {
-                String createIndexSql=createIndexSqls.get(0);
-                String newName= abbreviationIndexName(createTableName)+"_CONS_" + constraintNames.get(name)+"_"+ index.getAndIncrement();
-                String createConstanceSql=createIndexSql.
-                        replace(name, newName).
-                        replace(structureTablename, createTableName.toUpperCase());
-                //替换创建索引的语句
-                createConstanceSql=createConstanceSql.replaceAll("(USING INDEX )([\\s\\S]*?ENABLE,{0,1})","ENABLE");
-                String finalSql= DbUtil.safeSql(createConstanceSql);
-                result.add(finalSql);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * 获取入口标记名
-     *
-     * @param indexName
-     * @return
-     */
-    public String abbreviationIndexName(String indexName) {
-        String[] word = indexName.split("_");
-        StringBuilder resultWord = new StringBuilder();
-        if (word.length > 1) {
-            for (int i = 0; i < word.length; i++) {
-                if(i==word.length-1){
-                    resultWord.append(word[i]);
-                }else{
-                    resultWord.append(word[i].substring(0, 1));
-                }
-
-            }
-        } else {
-            resultWord.append(indexName);
-        }
-        return resultWord.toString().toUpperCase();
+//        String queryConstraintNameSql = StringUtil.replaceStance(SqlHelper.getSql( "query_table_constraint"), structureTablename);
+//        Map<String, String> constraintNames = jdbcTemplate.queryForList(queryConstraintNameSql)
+//                .stream().map((a) -> {
+//                    return MapUtil.toCamelCaseMap(a);
+//                }).collect(Collectors.toMap((k) -> {
+//                    return k.get("constraintName") + "";
+//                }, (v) -> {
+//                    return v.get("columnName") + "";
+//                }, (a, b) -> {
+//                    return b;
+//                }));
+//        String queryCreateConstraintSqlByName = SqlHelper.getSql( "query_table_constraintcreate");
+//        Pattern suffixPattern =null;
+//        if(StringUtil.isNotBlank(tableSuffix)&&null!=tableInfo){
+//            suffixPattern=Pattern.compile(tableInfo.getSuffixPattern());
+//        }else{
+//            suffixPattern=Pattern.compile("");
+//        }
+//        List<String> result=new ArrayList<>();
+//        for (String name : constraintNames.keySet()) {
+//            List<String> createIndexSqls =jdbcTemplate.queryForList(StringUtil.replaceStance(queryCreateConstraintSqlByName, name)).stream().map((a) -> {
+//                Map node= MapUtil.toCamelCaseMap(a);
+//                return node.get("indexSql") + "";
+//            }).collect(Collectors.toList());
+//            if (createIndexSqls.size() > 0) {
+//                String createUniqueSql=createIndexSqls.get(0);
+//                if(suffixPattern.matcher(name).find()){
+//                    String newIndexName=name.replaceAll(tableInfo.getSuffixPattern(),tableSuffix);
+//                    createUniqueSql=createUniqueSql.replace(name,newIndexName);
+//                }else{
+//                    createUniqueSql=createUniqueSql.replace(name, UUID.randomUUID().toString().replace("-",""));
+//                }
+//                if(createUniqueSql.toUpperCase().contains("PRIMARY KEY")){
+//                    continue;
+//                }
+//                createUniqueSql=createUniqueSql.replaceAll("(?i)"+structureTablename, createTableName);
+//                createUniqueSql=createUniqueSql.replaceAll("(USING INDEX )([\\s\\S]*?ENABLE,{0,1})","ENABLE");
+//                String finalSql= DbUtil.safeSql(createUniqueSql);
+//                result.add(finalSql);
+//            }
+//        }
+//        return result;
+        //create table sql already has unique sql
+        return new ArrayList<>();
     }
 }

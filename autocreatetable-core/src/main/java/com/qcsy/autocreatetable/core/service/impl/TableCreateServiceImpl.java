@@ -8,6 +8,7 @@ import com.qcsy.autocreatetable.core.service.TableStructureService;
 import com.qcsy.autocreatetable.core.utils.DateTimeUtil;
 import com.qcsy.autocreatetable.core.utils.StringUtil;
 import com.qcsy.autocreatetable.core.utils.TableInfoUtil;
+import io.micrometer.common.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -50,10 +51,16 @@ public class TableCreateServiceImpl implements TableCreateService {
                                   @Qualifier("table-structure-mysql") TableStructureService mysqlService,
                                   @Qualifier("table-structure-postgresql") TableStructureService postgresqlService,
                                   @Qualifier("table-structure-guassdb") TableStructureService guassdbService,
-                                  JdbcTemplate jdbcTemplate) {
-        String dbType= SqlHelper.getDialectDBType();
+                                  JdbcTemplate jdbcTemplate,
+                                  @Value("${tablecreate.dbtype:mysql}") String  dbType) {
         try{
-            this.tableSchema=jdbcTemplate.getDataSource().getConnection().getCatalog();
+            String dbSchema=jdbcTemplate.getDataSource().getConnection().getCatalog();
+            if(StringUtils.isBlank(dbSchema)){
+                this.tableSchema="";
+            }else{
+                this.tableSchema=jdbcTemplate.getDataSource().getConnection().getCatalog();
+            }
+
         }catch (Exception e){
             log.error("{}get db schema fail！", LOG_TITLE, e);
         }
