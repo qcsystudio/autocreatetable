@@ -1,12 +1,9 @@
 package com.qcsy.autocreatetable.core.utils;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -46,12 +43,11 @@ public class DateTimeUtil {
         List<String> times = new ArrayList<>();
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(pattern);
         LocalDateTime tempStartDateTime=startDate;
-        //添加第一个小时
+        // add an hour to startDate
         times.add(startDate.format(dateTimeFormatter));
-        while (tempStartDateTime.compareTo(startDate)>0) {
-            // 根据日历的规则，为给定的日历字段添加或减去指定的时间量
+        while (tempStartDateTime.compareTo(endDate)<0) {
             tempStartDateTime=tempStartDateTime.plus(1, unit);
-            if(tempStartDateTime.compareTo(startDate)>0){
+            if(tempStartDateTime.compareTo(endDate)<0){
                 times.add(tempStartDateTime.format(dateTimeFormatter));
             }
         };

@@ -82,7 +82,7 @@ public class TableCreateServiceImpl implements TableCreateService {
         TableInfo tableInfo= TableInfoUtil.getTableInfoByName(tableNameExtension);
         List<String> existsTables = tableStructureService.getExistsTables(this.tableSchema,tableInfo);
         String structureTablenameTemp = null;
-        if ("[max]".equals(referenceTableName)) {
+        if (StringUtil.isBlank(referenceTableName)||"[max]".equals(referenceTableName)) {
             if(null==existsTables|| existsTables.isEmpty()){
                 throw new TableCreateException("could not find structure table!");
             }
@@ -100,7 +100,7 @@ public class TableCreateServiceImpl implements TableCreateService {
             structureTablenameTemp = referenceTableName;
         }
         final String structureTablename = structureTablenameTemp.toUpperCase();
-        List<String> tableSuffixs= DateTimeUtil.getDateStrsBetween(startTime, endTime, tableInfo.getSuffixPattern(), tableInfo.getSuffixUnit());
+        List<String> tableSuffixs= DateTimeUtil.getDateStrsBetween(startTime, endTime, tableInfo.getSuffixType(), tableInfo.getSuffixUnit());
         Iterator<String> iterable=tableSuffixs.iterator();
         while (iterable.hasNext()){
             String suffix=iterable.next();
@@ -112,14 +112,9 @@ public class TableCreateServiceImpl implements TableCreateService {
         List<String> createTableNames = new ArrayList<String>();
         for (String tableSuffix : tableSuffixs) {
             //target table name
-            String createTableName=StringUtil.format(tableNameExtension,tableSuffix);
+            String createTableName=StringUtil.replaceStance(tableNameExtension,tableSuffix);
             log.info("{}start create table ，target table：{} structure table：{}",LOG_TITLE,createTableName,structureTablename);
-            List<String> allSql=new ArrayList<>();
-            allSql.addAll(tableStructureService.getCreateTableSql(this.tableSchema,structureTablename,createTableName,tableSuffix,tableInfo));
-            allSql.addAll(tableStructureService.getCreateIndexSqls(this.tableSchema,structureTablename,createTableName,tableSuffix,tableInfo));
-            allSql.addAll(tableStructureService.getCreateTriggerSqls(this.tableSchema,structureTablename,createTableName,tableSuffix,tableInfo));
-            allSql.addAll(tableStructureService.getCreateUniqueSqls(this.tableSchema,structureTablename,createTableName,tableSuffix,tableInfo));
-            allSql.forEach((String sql)->{jdbcTemplate.execute(sql);});
+            createTableByReferenceTable(structureTablename,createTableName,tableSuffix,tableInfo);
             createTableNames.add(createTableName);
         }
         return createTableNames;
@@ -144,5 +139,25 @@ public class TableCreateServiceImpl implements TableCreateService {
             result.addAll(createTable(tableName,startTime,endTime,null));
         });
         return result;
+    }
+
+    /**
+     *
+     * create table by reference table
+     * @param referenceTableName reference table name
+     * @param targetTableName target table name
+     * @param tableSuffix
+     * @param tableInfo
+     * @return
+     */
+    @Override
+    public String createTableByReferenceTable(String referenceTableName, String targetTableName,String tableSuffix, TableInfo tableInfo) {
+        List<String> allSql=new ArrayList<>();
+        allSql.addAll(tableStructureService.getCreateTableSql(this.tableSchema,referenceTableName,targetTableName,tableSuffix,tableInfo));
+        allSql.addAll(tableStructureService.getCreateIndexSqls(this.tableSchema,referenceTableName,targetTableName,tableSuffix,tableInfo));
+        allSql.addAll(tableStructureService.getCreateTriggerSqls(this.tableSchema,referenceTableName,targetTableName,tableSuffix,tableInfo));
+        allSql.addAll(tableStructureService.getCreateUniqueSqls(this.tableSchema,referenceTableName,targetTableName,tableSuffix,tableInfo));
+        allSql.forEach((String sql)->{jdbcTemplate.execute(sql);});
+        return targetTableName;
     }
 }

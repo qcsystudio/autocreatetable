@@ -8,13 +8,14 @@ import com.qcsy.autocreatetable.core.utils.DbUtil;
 import com.qcsy.autocreatetable.core.utils.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
 @Service("table-structure-mysql")
 public class TableStructureServiceMysqlImpl implements TableStructureService {
     private final static String LOG_TITLE="【auto create table:MYSQL】";
-    private final static String TABLE_SUFFIX_RGX="(_)([1-2][0,9][0-9]{4})";
+    Pattern INDEX_PATTERN = Pattern.compile("KEY `(.*)` \\(.*\\) USING ([0-9A-Za-z ]*)");
     @Autowired
     private JdbcTemplate jdbcTemplate;
     /**
@@ -74,7 +75,17 @@ public class TableStructureServiceMysqlImpl implements TableStructureService {
         }
         //替换表名为目标表名
         createTableSql=createTableSql.toUpperCase().replace(structureTablename.toUpperCase(),createTableName.toUpperCase());
-        createTableSql=createTableSql.replaceAll(TABLE_SUFFIX_RGX,"_"+tableSuffix);
+        Matcher matcher = INDEX_PATTERN.matcher(createTableSql);
+        Pattern suffixPattern =null==tableInfo?Pattern.compile(""): Pattern.compile(tableInfo.getSuffixPattern());
+        while (matcher.find()){
+          String indexName=matcher.group(1);
+          if(suffixPattern.matcher(indexName).find()&&StringUtil.isNotBlank(tableSuffix)&&null!=tableInfo){
+              String newIndexName=indexName.replaceAll(tableInfo.getSuffixPattern(),tableSuffix);
+              createTableSql=createTableSql.replace(indexName,newIndexName);
+          }else{
+              createTableSql=createTableSql.replace(indexName, UUID.randomUUID().toString().replace("-",""));
+          }
+        }
         List<String> result=new ArrayList<>();
         result.add(DbUtil.safeSql(createTableSql));
         return result;
@@ -116,7 +127,23 @@ public class TableStructureServiceMysqlImpl implements TableStructureService {
             List<String> createTriggerSqlRowList = jdbcTemplate.queryForList(StringUtil.replaceStance(queryCreateTriggerSqlByTriggerName, triggerName)).stream().map((a) -> {
                 return a.get("sql original statement") + "";
             }).collect(Collectors.toList());
-            createTriggerSqlList.addAll(createTriggerSqlRowList.stream().map((a)->{return a.replaceAll(TABLE_SUFFIX_RGX,""+tableSuffix);}).collect(Collectors.toList()));
+            Pattern suffixPattern =null;
+            if(StringUtil.isNotBlank(tableSuffix)&&null!=tableInfo){
+                suffixPattern=Pattern.compile(tableInfo.getSuffixPattern());
+            }else{
+                suffixPattern=Pattern.compile("");
+            }
+            Pattern finalSuffixPattern = suffixPattern;
+            createTriggerSqlList.addAll(createTriggerSqlRowList.stream().map((a)->{
+                a=a.replaceAll("(?i)"+structureTablename,createTableName);
+                a=a.replaceAll("DEFINER=(\\S*)","");
+                if(finalSuffixPattern.matcher(triggerName).find()){
+                    String newTriggerName=triggerName.replaceAll(tableInfo.getSuffixPattern(),tableSuffix);
+                    return a.replaceAll(triggerName,newTriggerName);
+                }else{
+                    return a.replaceAll(triggerName, UUID.randomUUID().toString().replaceAll("-", ""));
+                }
+            }).collect(Collectors.toList()));
         }
         return createTriggerSqlList;
     }
