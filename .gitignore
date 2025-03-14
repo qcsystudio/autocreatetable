@@ -32,4 +32,4 @@ build/
 **/package-lock.json
 **/node_modules/
 
-./central-monitor-paperless/src/main/resources/static
+application-dev.yml
