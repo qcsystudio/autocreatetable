@@ -6,6 +6,8 @@ Automatic monthly table creation tool based on springboot
 #### Software Architecture
 - Based on Spring Boot, JdbcTemplate is used, and the Spring Boot data source needs to be configured.
 - Based on the latest version of Spring Boot.
+- master branch: Based on springboot latest version
+
 - Basic principle:
 1. The program finds the reference table.
 2. Obtain the statement for creating a new table based on the reference table.
@@ -14,6 +16,7 @@ Automatic monthly table creation tool based on springboot
 5. Obtain the trigger statement based on the reference table.
 6. Create a new table, index, unique key, and trigger.
 #### Instructions
+The account must have table management rights. Database table names need to be case-insensitive
 Database support:
 - mysql
 - oracle
