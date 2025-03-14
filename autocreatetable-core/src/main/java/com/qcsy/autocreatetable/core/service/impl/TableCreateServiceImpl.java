@@ -2,7 +2,6 @@ package com.qcsy.autocreatetable.core.service.impl;
 
 import com.qcsy.autocreatetable.core.domain.TableInfo;
 import com.qcsy.autocreatetable.core.exception.TableCreateException;
-import com.qcsy.autocreatetable.core.helper.SqlHelper;
 import com.qcsy.autocreatetable.core.service.TableCreateService;
 import com.qcsy.autocreatetable.core.service.TableStructureService;
 import com.qcsy.autocreatetable.core.utils.DateTimeUtil;
@@ -13,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 

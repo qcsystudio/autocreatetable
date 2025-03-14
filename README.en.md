@@ -1,22 +1,28 @@
 # autocratetable
 
 #### Description
-基于springboot的自动月表创建包
+Automatic monthly table creation tool based on springboot
 
 #### Software Architecture
-Software architecture description
+- Based on Spring Boot, JdbcTemplate is used, and the Spring Boot data source needs to be configured.
+- Based on the latest version of Spring Boot.
+- Basic principle:
+1. The program finds the reference table.
+2. Obtain the statement for creating a new table based on the reference table.
+3. Obtain the index statement based on the reference table.
+4. Obtain the unique key statement based on the reference table.
+5. Obtain the trigger statement based on the reference table.
+6. Create a new table, index, unique key, and trigger.
+#### Instructions
+Database support:
+- mysql
+- oracle
+- postgresql
+- guassdb(not verified)
 
 #### Installation
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### Instructions
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
+- Run the system independently. You can directly run the system with autocreatetable-app.
+- Integrated into the original system, you can directly configure the autocreatetable-core package on the original system.
 
 #### Contribution
 
@@ -24,13 +30,3 @@ Software architecture description
 2.  Create Feat_xxx branch
 3.  Commit your code
 4.  Create Pull Request
-
-
-#### Gitee Feature
-
-1.  You can use Readme\_XXX.md to support different languages, such as Readme\_en.md, Readme\_zh.md
-2.  Gitee blog [blog.gitee.com](https://blog.gitee.com)
-3.  Explore open source project [https://gitee.com/explore](https://gitee.com/explore)
-4.  The most valuable open source project [GVP](https://gitee.com/gvp)
-5.  The manual of Gitee [https://gitee.com/help](https://gitee.com/help)
-6.  The most popular members  [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
