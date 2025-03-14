@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -26,24 +26,23 @@ import java.util.List;
 public class AutoTableCreateService implements CommandLineRunner {
     private static final String LOG_TITLE="【auto create month table】";
 
-    @Value("${tablecreate.onstart.enable:false}")
+    @Value("${tablecreate.enable.onstart:false}")
     private boolean enableOnStart;
 
-    @Value("${tablecreate.month.enable:false}")
+    @Value("${tablecreate.enable.month-first-day:false}")
     private boolean enableMonth;
 
     @Value("${tablecreate.target.tables:}")
     private String targetTableName;
-
-    @Value("${tablecreate.target.reference:}")
-    private String referenceTableName;
 
     @Autowired
     private  TableCreateService tableCreateService;
     @Override
     public void run(String... args) throws Exception {
         if(enableOnStart){
-            autoCreateTable();
+            createTables();
+        }else{
+            log.info("{} closed onstart create table",LOG_TITLE);
         }
     }
 
@@ -52,28 +51,38 @@ public class AutoTableCreateService implements CommandLineRunner {
      * @return List<String>
      */
     @Scheduled(cron = "0 0 0 1 * ?")
-    public List<String> autoCreateTable(){
+    public void autoCreateTable(){
         if(enableMonth){
-            LocalDate now = LocalDate.now();
-            //当月第一天
-            LocalDateTime startDate= now.plusMonths(1).withDayOfMonth(1).atStartOfDay();
-            //三月后的最后一天
-            LocalDateTime endDate= now.plusMonths(4).withDayOfMonth(1).minusDays(1).atStartOfDay();
-            if(StringUtil.isBlank(targetTableName)){
-                log.error("{}cannot Find config table",LOG_TITLE);
-                return new ArrayList<>();
-            }
-            List<String> tableNames= StrUtil.split(targetTableName,',');
-            List<String> result=new ArrayList<>();
-            tableNames.forEach((tableName)->{
-                result.addAll(tableCreateService.createTable(tableName,startDate,endDate,referenceTableName));
-            });
-            log.info("{} auto create tables:{}",LOG_TITLE, StrUtil.join(",",result));
-            return result;
+           createTables();
         }else{
-            log.error("{}cannot Find config table",LOG_TITLE);
-            return null;
+            log.info("{} closed auto create table",LOG_TITLE);
         }
+    }
+
+    private List<String> createTables(){
+        String split=":";
+        LocalDate now = LocalDate.now();
+        //当月第一天
+        LocalDateTime startDate= now.plusMonths(1).withDayOfMonth(1).atStartOfDay();
+        //三月后的最后一天
+        LocalDateTime endDate= now.plusMonths(4).withDayOfMonth(1).minusDays(1).atStartOfDay();
+        if(StringUtil.isBlank(targetTableName)){
+            log.error("{}cannot Find config table",LOG_TITLE);
+            return new ArrayList<>();
+        }
+        targetTableName=targetTableName.replace("\\{","{").replace("\\}", "}");
+        List<String> tableNames= Arrays.asList(targetTableName.split(","));
+        List<String> result=new ArrayList<>();
+        tableNames.forEach((tableName)->{
+            String referenceTableName="";
+            if(tableName.contains(split)){
+                tableName=tableName.split(split)[0];
+                referenceTableName=tableName.split(split)[1];
+            }
+            result.addAll(tableCreateService.createTable(tableName,startDate,endDate,referenceTableName));
+        });
+        log.info("{} auto create tables:{}",LOG_TITLE, StringUtil.join(",",result));
+        return result;
     }
 
 
