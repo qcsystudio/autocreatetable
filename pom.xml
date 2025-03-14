@@ -23,9 +23,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-boot.version>3.4.3</spring-boot.version>
         <fastjson.version>2.0.53</fastjson.version>
-        <mysql.version>8.0.33</mysql.version>
         <hutool.version>5.8.36</hutool.version>
         <dom4j.version>2.1.4</dom4j.version>
+        <mysql.version>8.0.33</mysql.version>
+        <postgresql.version>42.7.5</postgresql.version>
+        <oracle.version>11.2.0.4</oracle.version>
     </properties>
 
     <dependencies>
@@ -59,11 +61,6 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>mysql</groupId>
-                <artifactId>mysql-connector-java</artifactId>
-                <version>${mysql.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>cn.hutool</groupId>
                 <artifactId>hutool-core</artifactId>
                 <version>${hutool.version}</version>
@@ -72,6 +69,21 @@
                 <groupId>org.dom4j</groupId>
                 <artifactId>dom4j</artifactId>
                 <version>${dom4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>${mysql.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgresql.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.oracle</groupId>
+                <artifactId>ojdbc6</artifactId>
+                <version>${oracle.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

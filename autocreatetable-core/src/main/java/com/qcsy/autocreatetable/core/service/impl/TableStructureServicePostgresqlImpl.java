@@ -1,29 +1,26 @@
 package com.qcsy.autocreatetable.core.service.impl;
 
 import cn.hutool.core.map.MapUtil;
+import com.qcsy.autocreatetable.core.constant.CommonConstant;
 import com.qcsy.autocreatetable.core.domain.TableInfo;
 import com.qcsy.autocreatetable.core.helper.SqlHelper;
 import com.qcsy.autocreatetable.core.service.TableStructureService;
 import com.qcsy.autocreatetable.core.utils.DbUtil;
 import com.qcsy.autocreatetable.core.utils.StringUtil;
+import com.qcsy.autocreatetable.core.utils.UuidUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Description: Postgresql表结构创建服务类
- * Copyright: © 2023 CSTC. All rights reserved.
- * Department:交通信息化部
+ * Description: table structure service for postgresql
  *
- * @author luoxiaojian
+ * @author qcsy
  * @version 2023/11/6
  */
 @Slf4j
@@ -31,7 +28,6 @@ import java.util.stream.Collectors;
 public class TableStructureServicePostgresqlImpl implements TableStructureService {
     private final static String LOG_TITLE="【auto create table:POSTGRESQL】";
     private final static String TABLE_SUFFIX_RGX="(_)([1-2][0,9][0-9]{4})";
-    private final static Pattern TABLE_SUFFIX_PATTERN=Pattern.compile(TABLE_SUFFIX_RGX);
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
@@ -43,14 +39,14 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
      */
     @Override
     public List<String> getExistsTables(String schema, TableInfo tableInfo) {
-        String sql = SqlHelper.getSql("query_tablenames");
-        String tableName = StringUtil.replaceStance(tableInfo.getTableNameExtension(),"%") ;
+        String sql = SqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLENAMES);
+        String tableName =StringUtil.replaceStance(tableInfo.getTableNameExtension(),"%").toUpperCase() ;
         //替换sql式内
         sql = StringUtil.replaceStance(sql,schema, tableName);
         Pattern pattern = Pattern.compile(String.format("^%s$",StringUtil.replaceStance(tableInfo.getTableNameExtension(),tableInfo.getSuffixPattern())));
         List<String> tableList = jdbcTemplate.queryForList(sql).stream().map((a) -> {
-            Map node= MapUtil.toCamelCaseMap(a);
-            return node.get("tableName") + "";
+            Map node=MapUtil.toCamelCaseMap(a);
+            return node.get(CommonConstant.CNAME_TABLE_NAME) + "";
         }).filter((a) -> {
             return pattern.matcher(a).find();
         }).collect(Collectors.toList());
@@ -67,7 +63,7 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
      */
     @Override
     public List<String> getCreateTableSql(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
-        String createQuerySql = SqlHelper.getSql( "query_table_createsql");
+        String createQuerySql = SqlHelper.getSql( CommonConstant.SQLKEY_QUERY_TABLE_CREATESQL);
         createQuerySql = StringUtil.replaceStance(createQuerySql, structureTablename);
         Map createTableSqlList = jdbcTemplate.queryForMap(createQuerySql, null);
         String createTableSql = createTableSqlList.get("create table").toString();
@@ -78,7 +74,7 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
         }
         //替换表名为目标表名
         createTableSql=createTableSql.toUpperCase().replace(structureTablename.toUpperCase(),createTableName.toUpperCase());
-        createTableSql=createTableSql.replaceAll(TABLE_SUFFIX_RGX,"_"+tableSuffix);
+        createTableSql=createTableSql.replaceAll("(?i)"+structureTablename,createTableName);
         List<String> result=new ArrayList<>();
         String sql= DbUtil.safeSql(createTableSql);
         sql=sql.replaceAll("(CREATE INDEX)(.*)(\\;)","");
@@ -96,18 +92,44 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
      */
     @Override
     public List<String> getCreateIndexSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
-        String queryIndexNameSql =StringUtil.replaceStance(SqlHelper.getSql( "query_table_indexs"),schema, structureTablename);
-        return jdbcTemplate.queryForList(queryIndexNameSql).stream().map((Map a)->{
-            Map node= MapUtil.toCamelCaseMap(a);
-            String indexName=node.get("indexName")+"";
-            //处理月表后缀
-            indexName=indexName.replaceAll(TABLE_SUFFIX_RGX,"_"+tableSuffix);
-            if(!TABLE_SUFFIX_PATTERN.matcher(indexName).find()){
-                indexName=indexName+"_"+tableSuffix;
-            }
-            String columnName=node.get("columnName")+"";
-            return "ALTER TABLE "+createTableName+" ADD INDEX "+indexName+"("+columnName+")";
-        }).collect(Collectors.toList());
+        Map<String,Object> params = new HashMap<>();
+        params.put("tableSchema", schema);
+        params.put("tableName", structureTablename);
+        String queryIndexNameSql =StringUtil.replaceStance(SqlHelper.getSql( "query_table_indexs"), params);
+        Map<String, String> indexNames = jdbcTemplate.queryForList(queryIndexNameSql)
+                .stream().map((a)->{
+                    Map node= MapUtil.toCamelCaseMap(a);
+                    return node;
+                }).collect(Collectors.toMap((k) -> {
+                    return k.get(CommonConstant.CNAME_INDEX_NAME) + "";
+                }, (v) -> {
+                    return v.get(CommonConstant.CNAME_COLUMN_NAME) + "";
+                }, (a, b) -> {
+                    return b;
+                }));
+        Pattern suffixPattern =null;
+        if(StringUtil.isNotBlank(tableSuffix)&&null!=tableInfo){
+            suffixPattern=Pattern.compile(tableInfo.getSuffixPattern());
+        }else{
+            suffixPattern=Pattern.compile("");
+        }
+        Pattern finalSuffixPattern = suffixPattern;
+        List<String> result=new ArrayList<>();
+        for (String indexName : indexNames.keySet()) {
+            String queryIndexCreateSql =StringUtil.replaceStance(SqlHelper.getSql( "query_table_indexscreate"),schema, structureTablename, indexName);
+            result.addAll(jdbcTemplate.queryForList(queryIndexCreateSql).stream().map((Map a)->{
+                Map node= MapUtil.toCamelCaseMap(a);
+                String indexSql=node.get(CommonConstant.CNAME_INDEX_SQL)+"";
+                if(finalSuffixPattern.matcher(indexName).find()){
+                    indexSql=indexSql.replace(indexName,indexName.replaceAll(tableInfo.getSuffixPattern(),tableSuffix));
+                }else{
+                    indexSql=indexSql.replace(indexName, String.format("%s_%s",CommonConstant.PREFIX_INDEX, UuidUtil.getUuid()));
+                }
+                indexSql=indexSql.replaceAll("(?i)"+structureTablename,createTableName);
+                return indexSql;
+            }).collect(Collectors.toList()));
+        }
+        return result;
     }
 
     /**
@@ -128,11 +150,25 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
         }).collect(Collectors.toList());
         List<String> createTriggerSqlList = new ArrayList<>();
         String queryCreateTriggerSqlByTriggerName = SqlHelper.getSql( "query_table_triggercreate");
+        Pattern suffixPattern =null;
+        if(StringUtil.isNotBlank(tableSuffix)&&null!=tableInfo){
+            suffixPattern=Pattern.compile(tableInfo.getSuffixPattern());
+        }else{
+            suffixPattern=Pattern.compile("");
+        }
         for (String triggerName : triggerNameList) {
             List<String> createTriggerSqlRowList =jdbcTemplate.queryForList(StringUtil.replaceStance(queryCreateTriggerSqlByTriggerName, triggerName)).stream().map((a) -> {
                 return a.get("sql original statement") + "";
             }).collect(Collectors.toList());
-            createTriggerSqlList.addAll(createTriggerSqlRowList.stream().map((a)->{return a.replaceAll(TABLE_SUFFIX_RGX,""+tableSuffix);}).collect(Collectors.toList()));
+            Pattern finalSuffixPattern = suffixPattern;
+            createTriggerSqlList.addAll(createTriggerSqlRowList.stream().map((a)->{
+                if(finalSuffixPattern.matcher(triggerName).find()){
+                    String newTriggerName=triggerName.replaceAll(tableInfo.getSuffixPattern(),tableSuffix);
+                    return a.replaceAll(triggerName,newTriggerName);
+                }else{
+                    return a.replaceAll(triggerName,String.format("%s_%s",CommonConstant.PREFIX_TRIGGER,UuidUtil.getUuid()));
+                }
+            }).collect(Collectors.toList()));
         }
         return createTriggerSqlList;
     }
@@ -147,6 +183,7 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
      */
     @Override
     public List<String> getCreateUniqueSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
+        // index has already created
         return new ArrayList<>();
     }
 }

@@ -2,18 +2,23 @@ spring:
   application:
     name: autocreatetable
   jpa:
-    database: oracle
+    database: postgresql
     show-sql: true
 #  datasource:
 #    driver-class-name: com.mysql.cj.jdbc.Driver
 #    url: jdbc:mysql://10.17.31.7:35910/monitor_toll?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&rewriteBatchedStatements=true&serverTimezone=Asia/Shanghai
 #    username: monitor_toll
 #    password: monitor_toll@5885
+#  datasource:
+#    driver-class-name: oracle.jdbc.driver.OracleDriver
+#    url: jdbc:oracle:thin:@10.17.31.7:35930:ORCL
+#    username: qh_audit
+#    password: Csnt,5885
   datasource:
-    driver-class-name: oracle.jdbc.driver.OracleDriver
-    url: jdbc:oracle:thin:@10.17.31.7:35930:ORCL
-    username: qh_audit
-    password: Csnt,5885
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://10.17.31.5:35970/monitor_toll?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&rewriteBatchedStatements=true&serverTimezone=Asia/Shanghai
+    username: vbadmin
+    password: F_623225
 
 tablecreate:
-  dbtype: oracle
+  dbtype: postgresql

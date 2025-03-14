@@ -1,6 +1,7 @@
 package com.qcsy.autocreatetable.core.service.impl;
 
 import cn.hutool.core.map.MapUtil;
+import com.qcsy.autocreatetable.core.constant.CommonConstant;
 import com.qcsy.autocreatetable.core.domain.TableInfo;
 import com.qcsy.autocreatetable.core.helper.SqlHelper;
 import com.qcsy.autocreatetable.core.service.TableStructureService;
@@ -41,7 +42,7 @@ public class TableStructureServiceGuassdbImpl implements TableStructureService {
     @Override
     public List<String> getExistsTables(String schema, TableInfo tableInfo) {
 
-        String sql = SqlHelper.getSql("query_tablenames");
+        String sql = SqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLENAMES);
         String tableName = StringUtil.replaceStance(tableInfo.getTableNameExtension(),"%") ;
         //替换sql式内
         sql = StringUtil.replaceStance(sql,schema, tableName);
@@ -65,7 +66,7 @@ public class TableStructureServiceGuassdbImpl implements TableStructureService {
      */
     @Override
     public List<String> getCreateTableSql(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
-        String sql =SqlHelper.getSql("query_table_createsql");
+        String sql =SqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLE_CREATESQL);
         sql = StringUtil.replaceStance(sql,createTableName, structureTablename);
         List<String> result=new ArrayList<>();
         result.add(sql);

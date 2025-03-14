@@ -1,11 +1,13 @@
 package com.qcsy.autocreatetable.core.service.impl;
 
 import cn.hutool.core.map.MapUtil;
+import com.qcsy.autocreatetable.core.constant.CommonConstant;
 import com.qcsy.autocreatetable.core.domain.TableInfo;
 import com.qcsy.autocreatetable.core.helper.SqlHelper;
 import com.qcsy.autocreatetable.core.service.TableStructureService;
 import com.qcsy.autocreatetable.core.utils.DbUtil;
 import com.qcsy.autocreatetable.core.utils.StringUtil;
+import com.qcsy.autocreatetable.core.utils.UuidUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -40,8 +42,8 @@ public class TableStructureServiceMysqlImpl implements TableStructureService {
      */
     @Override
     public List<String> getExistsTables(String schema, TableInfo tableInfo) {
-        String sql = SqlHelper.getSql("query_tablenames");
-        String tableName =StringUtil.replaceStance(tableInfo.getTableNameExtension(),"%") ;
+        String sql = SqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLENAMES);
+        String tableName =StringUtil.replaceStance(tableInfo.getTableNameExtension(),"%").toUpperCase() ;
         //替换sql式内
         sql = StringUtil.replaceStance(sql,schema, tableName);
         Pattern pattern = Pattern.compile(String.format("^%s$",StringUtil.replaceStance(tableInfo.getTableNameExtension(),tableInfo.getSuffixPattern())));
@@ -64,7 +66,7 @@ public class TableStructureServiceMysqlImpl implements TableStructureService {
      */
     @Override
     public List<String> getCreateTableSql(String schema, String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
-        String createQuerySql = SqlHelper.getSql( "query_table_createsql");
+        String createQuerySql = SqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLE_CREATESQL);
         createQuerySql = StringUtil.replaceStance(createQuerySql, structureTablename);
         Map createTableSqlList = jdbcTemplate.queryForMap(createQuerySql, null);
         String createTableSql = createTableSqlList.get("create table").toString();
@@ -74,7 +76,7 @@ public class TableStructureServiceMysqlImpl implements TableStructureService {
                     + createTableSql.substring(createTableSql.indexOf("PRIMARY"));
         }
         //替换表名为目标表名
-        createTableSql=createTableSql.toUpperCase().replace(structureTablename.toUpperCase(),createTableName.toUpperCase());
+        createTableSql=createTableSql.replaceAll("(?i)"+structureTablename,createTableName);
         Matcher matcher = INDEX_PATTERN.matcher(createTableSql);
         Pattern suffixPattern =null==tableInfo?Pattern.compile(""): Pattern.compile(tableInfo.getSuffixPattern());
         while (matcher.find()){
@@ -83,7 +85,7 @@ public class TableStructureServiceMysqlImpl implements TableStructureService {
               String newIndexName=indexName.replaceAll(tableInfo.getSuffixPattern(),tableSuffix);
               createTableSql=createTableSql.replace(indexName,newIndexName);
           }else{
-              createTableSql=createTableSql.replace(indexName, UUID.randomUUID().toString().replace("-",""));
+              createTableSql=createTableSql.replace(indexName, String.format("%s_%s", CommonConstant.PREFIX_INDEX, UuidUtil.getUuid()));
           }
         }
         List<String> result=new ArrayList<>();
@@ -141,7 +143,7 @@ public class TableStructureServiceMysqlImpl implements TableStructureService {
                     String newTriggerName=triggerName.replaceAll(tableInfo.getSuffixPattern(),tableSuffix);
                     return a.replaceAll(triggerName,newTriggerName);
                 }else{
-                    return a.replaceAll(triggerName, UUID.randomUUID().toString().replaceAll("-", ""));
+                    return a.replaceAll(triggerName, String.format("%s_%s", CommonConstant.PREFIX_TRIGGER, UuidUtil.getUuid()));
                 }
             }).collect(Collectors.toList()));
         }

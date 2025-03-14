@@ -42,14 +42,14 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
      */
     @Override
     public List<String> getExistsTables(String schema, TableInfo tableInfo) {
-        String sql = SqlHelper.getSql("query_tablenames");
+        String sql = SqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLENAMES);
         String tableName = StringUtil.replaceStance(tableInfo.getTableNameExtension(),"%") ;
         //替换sql式内
         sql = StringUtil.replaceStance(sql, tableName);
         Pattern pattern = Pattern.compile(String.format("^%s$",StringUtil.replaceStance(tableInfo.getTableNameExtension(),tableInfo.getSuffixPattern())));
         List<String> tableList = jdbcTemplate.queryForList(sql).stream().map((a) -> {
             Map node= MapUtil.toCamelCaseMap(a);
-            return node.get("tableName") + "";
+            return node.get(CommonConstant.CNAME_TABLE_NAME) + "";
         }).filter((a) -> {
             return pattern.matcher(a).find();
         }).collect(Collectors.toList());
@@ -66,11 +66,11 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
      */
     @Override
     public  List<String> getCreateTableSql(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo){
-        String createQuerySql =SqlHelper.getSql( "query_table_createsql");
+        String createQuerySql =SqlHelper.getSql( CommonConstant.SQLKEY_QUERY_TABLE_CREATESQL);
         createQuerySql = StringUtil.replaceStance(createQuerySql, structureTablename);
         List<String> createTableSqlList = jdbcTemplate.queryForList(createQuerySql).stream().map((a) -> {
             Map node= MapUtil.toCamelCaseMap(a);
-            return node.get("tableName") + "";
+            return node.get(CommonConstant.CNAME_TABLE_NAME) + "";
         }).collect(Collectors.toList());
         String createTableSql = createTableSqlList.get(0);
         createTableSql=createTableSql.replaceAll("(?i)"+structureTablename, createTableName);
@@ -190,7 +190,7 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
                 String newIndexName=triggerName.replaceAll(tableInfo.getSuffixPattern(),tableSuffix);
                 triggerSql=triggerSql.replace(triggerName,newIndexName);
             }else{
-                triggerSql=triggerSql.replace(triggerName, String.format("%s_%s", CommonConstant.TRIGGER_PREFIX,UuidUtil.getUuid() ));
+                triggerSql=triggerSql.replace(triggerName, String.format("%s_%s", CommonConstant.PREFIX_TRIGGER,UuidUtil.getUuid() ));
             }
             createTriggerSqlList.add(DbUtil.safeSql(triggerSql));
         }
