@@ -7,13 +7,13 @@ import com.qcsy.autocreatetable.core.service.TableStructureService;
 import com.qcsy.autocreatetable.core.utils.DateTimeUtil;
 import com.qcsy.autocreatetable.core.utils.StringUtil;
 import com.qcsy.autocreatetable.core.utils.TableInfoUtil;
-import io.micrometer.common.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -53,7 +53,7 @@ public class TableCreateServiceImpl implements TableCreateService {
                                   @Value("${tablecreate.dbtype:mysql}") String  dbType) {
         try{
             String dbSchema=jdbcTemplate.getDataSource().getConnection().getCatalog();
-            if(StringUtils.isBlank(dbSchema)){
+            if(StringUtil.isBlank(dbSchema)){
                 this.tableSchema="";
             }else{
                 this.tableSchema=jdbcTemplate.getDataSource().getConnection().getCatalog();
@@ -155,6 +155,7 @@ public class TableCreateServiceImpl implements TableCreateService {
      * @param tableInfo
      * @return
      */
+    @Transactional
     @Override
     public String createTableByReferenceTable(String referenceTableName, String targetTableName,String tableSuffix, TableInfo tableInfo) {
         List<String> allSql=new ArrayList<>();
