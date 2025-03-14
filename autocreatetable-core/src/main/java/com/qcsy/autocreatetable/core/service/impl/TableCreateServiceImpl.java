@@ -50,7 +50,9 @@ public class TableCreateServiceImpl implements TableCreateService {
                                   @Qualifier("table-structure-postgresql") TableStructureService postgresqlService,
                                   @Qualifier("table-structure-guassdb") TableStructureService guassdbService,
                                   JdbcTemplate jdbcTemplate,
-                                  @Value("${tablecreate.dbtype:mysql}") String  dbType) {
+                                  @Value("${tablecreate.dbtype:}") String  dbType,
+                                  @Value("${spring.jpa.database:mysql}") String  jpaDbType
+                                  ) {
         try{
             String dbSchema=jdbcTemplate.getDataSource().getConnection().getCatalog();
             if(StringUtil.isBlank(dbSchema)){
@@ -61,6 +63,9 @@ public class TableCreateServiceImpl implements TableCreateService {
 
         }catch (Exception e){
             log.error("{}get db schema fail！", LOG_TITLE, e);
+        }
+        if(StringUtil.isBlank(dbType)){
+            dbType=jpaDbType;
         }
         if("oracle".equalsIgnoreCase(dbType)){
             this.tableStructureService=oracleService;
