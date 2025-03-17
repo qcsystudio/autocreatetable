@@ -12,7 +12,7 @@
 
     <modules>
         <module>autocreatetable</module>
-        <module>autocreatetable-app</module>
+        <module>autocreatetable-test</module>
     </modules>
 
     <properties>

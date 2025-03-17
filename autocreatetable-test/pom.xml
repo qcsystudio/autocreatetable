@@ -8,7 +8,7 @@
         <artifactId>autocreatetable</artifactId>
         <version>1.0</version>
     </parent>
-    <artifactId>autocreatetable-app</artifactId>
+    <artifactId>autocreatetable-test</artifactId>
     <version>1.0</version>
     <packaging>jar</packaging>
 
