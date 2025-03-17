@@ -5,11 +5,9 @@ import com.qcsy.autocreatetable.core.domain.TableInfo;
 import java.util.List;
 
 /**
- * Description:表结构服务
- * Copyright: © 2023 CSTC. All rights reserved.
- * Department:交通信息化部
+ * Description: table structure service
  *
- * @author luoxiaojian
+ * @author qcsy
  * @version 2023/11/6
  */
 public interface TableStructureService {
