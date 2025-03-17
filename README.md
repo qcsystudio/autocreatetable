@@ -28,6 +28,28 @@
 - 单独运行系统，可以直接配合autocreatetable-app单独运行系统。
 - 集成到原有系统中，可以直接在原有系统中配置集成autocreatetable-core包。
 
+#### 配置
+- pom.xml
+```xml
+<dependency>
+    <groupId>io.github.qcsystudio</groupId>
+    <artifactId>autocreatetable</artifactId>
+    <version>1.0</version>
+</dependency>
+
+```
+- application.yml
+```yaml
+createtable:
+  enable:
+    onstart: false # 启动程序检查并创建月表.默认 false
+    month-first-day: false # 是否以每月1号为每月的第一天，默认false
+  target:
+    # 表名配置，支持变量： ${yyyyMM}、${yyyyMMdd}、${yyMM}、${yyyy}。
+    # 默认以月表最大表为参考表。可以通过xxxx_$\{yyyyMM\}:参考表名 来指定参考表。[max]指使用最大月表为参考表。[min]指使用最小月表为参考表。
+    tables: xxxx_$\{yyyyMM\} 
+
+```
 #### 参与贡献
 
 1.  Fork 本仓库

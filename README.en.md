@@ -27,6 +27,32 @@ Database support:
 - Run the system independently. You can directly run the system with autocreatetable-app.
 - Integrated into the original system, you can directly configure the autocreatetable-core package on the original system.
 
+#### configuration
+- pom.xml
+```xml
+<dependency>
+    <groupId>io.github.qcsystudio</groupId>
+    <artifactId>autocreatetable</artifactId>
+    <version>1.0</version>
+</dependency>
+
+```
+
+- application.yml
+```yaml
+createtable:
+  enable:
+    onstart: false # Whether to create a table when the system starts. default false
+    month-first-day: false # Whether to create a table on the first day of the month. default false
+  target:
+    # The table name to be created. can choose the table name with ${yyyyMM}、${yyyyMMdd}、${yyMM}、${yyyy}. 
+    # default use max month table name to reference. 
+    # you can usexxxx_$\{yyyyMM\}:referenceTableName to set up a reference table name. [max] is use max month table . [min] is use min month table .
+    tables: xxxx_$\{yyyyMM\} 
+ 
+```
+
+
 #### Contribution
 
 1.  Fork the repository
