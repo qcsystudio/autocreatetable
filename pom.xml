@@ -8,7 +8,7 @@
     <version>1.0</version>
     <packaging>pom</packaging>
     <name>autocreatetable</name>
-    <description>for auto create table data base </description>
+    <description>a component base on springboot  to auto create table </description>
 
     <modules>
         <module>autocreatetable</module>
