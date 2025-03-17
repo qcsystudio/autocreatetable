@@ -15,17 +15,17 @@ import java.util.List;
  */
 public class DateTimeUtil {
     /**
-     * 将Date转换为LocalDateTime
-     * @param date
-     * @return
+     * trans date to LocalDateTime
+     * @param date target date
+     * @return LocalDateTime
      */
     public static LocalDateTime dateToLocalDateTime(Date date) {
         return date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
     }
     /**
-     * 将LocalDateTime转换为Date
-     * @param localDateTime 目标数据
-     * @return
+     * trans LocalDateTime to Date
+     * @param localDateTime target LocalDateTime
+     * @return java.util.Date
      */
     public static Date localDateTimeToDate(LocalDateTime localDateTime) {
         return Date.from(localDateTime.atZone(java.time.ZoneId.systemDefault()).toInstant());
@@ -37,7 +37,7 @@ public class DateTimeUtil {
      * @param endDate endDate
      * @param pattern reesult date format
      * @param unit unit
-     * @return List<String>
+     * @return result
      */
     public static List<String> getDateStrsBetween(LocalDateTime startDate, LocalDateTime endDate, String pattern, ChronoUnit unit) {
         List<String> times = new ArrayList<>();

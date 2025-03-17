@@ -19,11 +19,11 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 /**
- * @description: table create service impl
+ * description:  table create service impl
  *
  *
  * @author qcsy
- * @date 2020/07/01
+ * date 2020/07/01
  */
 @Slf4j
 @Service
@@ -156,9 +156,9 @@ public class TableCreateServiceImpl implements TableCreateService {
      * create table by reference table
      * @param referenceTableName reference table name
      * @param targetTableName target table name
-     * @param tableSuffix
-     * @param tableInfo
-     * @return
+     * @param tableSuffix table suffix
+     * @param tableInfo table info
+     * @return table name
      */
     @Transactional
     @Override

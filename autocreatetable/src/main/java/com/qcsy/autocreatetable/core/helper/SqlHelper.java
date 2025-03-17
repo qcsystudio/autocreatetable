@@ -33,30 +33,30 @@ public class SqlHelper {
     }
 
     /**
-     * 获取sql
+     * get sql
      * @param sqlType sql类型
-     * @return
+     * @return sql
      */
     public static String getSql(String sqlType){
         return getSql(sqlType,dbtype);
     }
 
     /**
-     * 获取sql
+     * get sql
      * @param sqlType sql类型
      * @param dbtype 数据库乐享
-     * @return
+     * @return sql
      */
     public static String getSql(String sqlType,String dbtype){
        return getSql("tablecreate.xml",sqlType,dbtype);
     }
 
     /**
-     * 获取sql
-     * @param fileName
-     * @param sqlType
-     * @param dbtype
-     * @return
+     * get sql
+     * @param fileName file name
+     * @param sqlType sql type
+     * @param dbtype database type
+     * @return sql
      */
     @SneakyThrows
     public static String getSql(String fileName, String sqlType, String dbtype){
@@ -92,6 +92,10 @@ public class SqlHelper {
         return doc;
     }
 
+    /**
+     * get dialect db type
+     * @return db type
+     */
     public static String getDialectDBType() {
         return dbtype;
     }

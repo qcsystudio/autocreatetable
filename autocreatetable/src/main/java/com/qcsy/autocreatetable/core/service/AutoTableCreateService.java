@@ -48,7 +48,6 @@ public class AutoTableCreateService implements CommandLineRunner {
 
     /**
      * auto create month table(every month 1st 00:00:00,auto check create current month and next 3 month table)
-     * @return List<String>
      */
     @Scheduled(cron = "0 0 0 1 * ?")
     public void autoCreateTable(){

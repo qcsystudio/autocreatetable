@@ -9,7 +9,7 @@ package com.qcsy.autocreatetable.core.utils;
 public class UuidUtil {
     /**
      * generate short uuid
-     * @return
+     * @return short uuid
      */
     public static String getUuid() {
         return java.util.UUID.randomUUID().toString().replace("-", "");

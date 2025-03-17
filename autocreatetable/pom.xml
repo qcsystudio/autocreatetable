@@ -8,7 +8,16 @@
         <artifactId>autocreatetable-parent</artifactId>
         <version>1.0</version>
     </parent>
+    <description>a component base on springboot  to auto create table </description>
     <artifactId>autocreatetable</artifactId>
+    <developers>
+        <developer>
+            <id>qcsystudio</id>
+            <name>qcsystudio</name>
+            <email>qinchengshiyu@foxmail.com</email>
+        </developer>
+    </developers>
+    <url>https://github.com/qcsystudio/autocreatetable</url>
     <version>1.0</version>
     <packaging>jar</packaging>
     <properties>
@@ -46,20 +55,18 @@
             <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
-    <!--  填写自己的git地址  -->
     <scm>
         <connection>scm:git:git://github.com:qcsystudio</connection>
         <developerConnection>scm:git:git@github.com:qcsystudio</developerConnection>
         <url>https://github.com/qcsystudio</url>
         <tag>HEAD</tag>
     </scm>
-    <!--  以下插件必须有  -->
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version> <!-- 请根据需要选择最新版本 -->
+                <version>3.2.4</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -134,8 +141,7 @@
                 <version>0.4.0</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <!-- 这里的serverId是之前在本地settings.xml中配置的<server><id>标签值（上述三(1)步骤） -->
-                    <publishingServerId>xxxxx</publishingServerId>
+                    <publishingServerId>center</publishingServerId>
                     <tokenAuth>true</tokenAuth>
                 </configuration>
             </plugin>

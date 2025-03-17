@@ -21,6 +21,7 @@ public interface TableCreateService{
      * @param startTime start time
      * @param endTime end time
      * @param referenceTableName reference table name. null or [max] means use max table. [min] means use min table.
+     * @return tables
      */
     List<String> createTable(String tableNameExtension, LocalDateTime startTime, LocalDateTime endTime, String referenceTableName);
 
@@ -33,11 +34,13 @@ public interface TableCreateService{
     List<String> createTableYears(List<String> tableNameStructures, String year);
 
 
-    /**
+   /**
      * create table by reference table
      * @param referenceTableName reference table name
      * @param targetTableName target table name
-     * @return
+     * @param tableSuffix table suffix
+     * @param tableInfo table info
+     * @return results
      */
     String createTableByReferenceTable(String referenceTableName, String targetTableName,String tableSuffix, TableInfo tableInfo);
 }
