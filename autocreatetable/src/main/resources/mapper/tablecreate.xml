@@ -61,8 +61,8 @@
         </common>
         <oracle>
             <![CDATA[
-              SELECT ui.INDEX_NAME,uic.column_name FROM USER_INDEXES ui LEFT JOIN user_ind_columns uic ON ui.INDEX_NAME=uic.INDEX_NAME
-               WHERE ui.table_name = '${tableName}' and ui.uniqueness !='UNIQUE'
+              SELECT ui.INDEX_NAME,uic.column_name FROM ALL_INDEXES ui LEFT JOIN ALL_IND_COLUMNS uic ON ui.INDEX_NAME=uic.INDEX_NAME
+               WHERE ui.table_name = ? and ui.uniqueness !='UNIQUE'
             ]]>
         </oracle>
         <guassdb>
@@ -110,7 +110,7 @@
     <sql id="query_table_indexscreate">
         <oracle>
             <![CDATA[
-             select dbms_metadata.get_ddl('INDEX', '${indexName}' ) as index_sql from dual
+            CREATE INDEX ${indexName} ON ${tableName}(${columnName})
             ]]>
         </oracle>
         <postgresql>
@@ -127,7 +127,7 @@
         <oracle>
             <![CDATA[
               select au.constraint_name,cu.column_name from user_constraints au LEFT JOIN user_cons_columns cu on cu.constraint_name = au.constraint_name
-              where au.constraint_type  in ('U','P') and au.table_name = '${tableName}'
+              where au.constraint_type  in ('U','P') and au.table_name = ?
             ]]>
         </oracle>
     </sql>

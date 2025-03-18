@@ -2,19 +2,22 @@ package io.github.qcsystudio.autocreatetable.core.service.impl;
 
 import io.github.qcsystudio.autocreatetable.core.domain.TableInfo;
 import io.github.qcsystudio.autocreatetable.core.exception.TableCreateException;
+import io.github.qcsystudio.autocreatetable.core.helper.SqlHelper;
 import io.github.qcsystudio.autocreatetable.core.service.TableCreateService;
 import io.github.qcsystudio.autocreatetable.core.service.TableStructureService;
 import io.github.qcsystudio.autocreatetable.core.utils.DateTimeUtil;
 import io.github.qcsystudio.autocreatetable.core.utils.StringUtil;
 import io.github.qcsystudio.autocreatetable.core.utils.TableInfoUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Scope;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -27,58 +30,26 @@ import java.util.*;
  */
 @Slf4j
 @Service
-public class TableCreateServiceImpl implements TableCreateService {
+@Scope("singleton")
+public class TableCreateServiceImpl implements TableCreateService, InitializingBean {
     private static final String LOG_TITLE = "【auto create month table】";
-
-    @Value("${lms.tablecreate.tables:{}}")
-    private String tableInfos;
-
     @Autowired
     private JdbcTemplate jdbcTemplate;
-
-    /**
-     * table structure service
-     */
-    private TableStructureService tableStructureService;
     /**
      * db schema
      */
     private String tableSchema;
+    @Resource(name = "table-structure-oracle")
+    private TableStructureService oracleService;
+    @Resource(name = "table-structure-mysql")
+    private TableStructureService mysqlService;
+    @Resource(name = "table-structure-postgresql")
+    private TableStructureService postgresqlService;
+    @Resource(name = "table-structure-guassdb")
+    private TableStructureService guassdbService;
 
-    public TableCreateServiceImpl(@Qualifier("table-structure-oracle") TableStructureService oracleService,
-                                  @Qualifier("table-structure-mysql") TableStructureService mysqlService,
-                                  @Qualifier("table-structure-postgresql") TableStructureService postgresqlService,
-                                  @Qualifier("table-structure-guassdb") TableStructureService guassdbService,
-                                  JdbcTemplate jdbcTemplate,
-                                  @Value("${tablecreate.dbtype:}") String  dbType,
-                                  @Value("${spring.jpa.database:mysql}") String  jpaDbType
-                                  ) {
-        try{
-            String dbSchema=jdbcTemplate.getDataSource().getConnection().getCatalog();
-            if(StringUtil.isBlank(dbSchema)){
-                this.tableSchema="";
-            }else{
-                this.tableSchema=jdbcTemplate.getDataSource().getConnection().getCatalog();
-            }
-
-        }catch (Exception e){
-            log.error("{}get db schema fail！", LOG_TITLE, e);
-        }
-        if(StringUtil.isBlank(dbType)){
-            dbType=jpaDbType;
-        }
-        if("oracle".equalsIgnoreCase(dbType)){
-            this.tableStructureService=oracleService;
-        }else if("postgresql".equalsIgnoreCase(dbType)){
-            this.tableStructureService=postgresqlService;
-            this.tableSchema="public";
-        }else if("guassdb".equalsIgnoreCase(dbType)){
-            this.tableStructureService=guassdbService;
-            this.tableSchema="public";
-        }else{
-            this.tableStructureService=mysqlService;
-        }
-    }
+    @Autowired
+    private SqlHelper sqlHelper;
 
     /**
      * reference table to create month table
@@ -90,7 +61,7 @@ public class TableCreateServiceImpl implements TableCreateService {
     @Override
     public List<String> createTable(String tableNameExtension, LocalDateTime startTime, LocalDateTime endTime, String referenceTableName) {
         TableInfo tableInfo= TableInfoUtil.getTableInfoByName(tableNameExtension);
-        List<String> existsTables = tableStructureService.getExistsTables(this.tableSchema,tableInfo);
+        List<String> existsTables = getTableStructureService().getExistsTables(this.tableSchema,tableInfo);
         String structureTablenameTemp = null;
         if (StringUtil.isBlank(referenceTableName)||"[max]".equals(referenceTableName)) {
             if(null==existsTables|| existsTables.isEmpty()){
@@ -164,11 +135,45 @@ public class TableCreateServiceImpl implements TableCreateService {
     @Override
     public String createTableByReferenceTable(String referenceTableName, String targetTableName,String tableSuffix, TableInfo tableInfo) {
         List<String> allSql=new ArrayList<>();
-        allSql.addAll(tableStructureService.getCreateTableSql(this.tableSchema,referenceTableName,targetTableName,tableSuffix,tableInfo));
-        allSql.addAll(tableStructureService.getCreateIndexSqls(this.tableSchema,referenceTableName,targetTableName,tableSuffix,tableInfo));
-        allSql.addAll(tableStructureService.getCreateTriggerSqls(this.tableSchema,referenceTableName,targetTableName,tableSuffix,tableInfo));
-        allSql.addAll(tableStructureService.getCreateUniqueSqls(this.tableSchema,referenceTableName,targetTableName,tableSuffix,tableInfo));
+        allSql.addAll(getTableStructureService().getCreateTableSql(this.tableSchema,referenceTableName,targetTableName,tableSuffix,tableInfo));
+        allSql.addAll(getTableStructureService().getCreateIndexSqls(this.tableSchema,referenceTableName,targetTableName,tableSuffix,tableInfo));
+        allSql.addAll(getTableStructureService().getCreateTriggerSqls(this.tableSchema,referenceTableName,targetTableName,tableSuffix,tableInfo));
+        allSql.addAll(getTableStructureService().getCreateUniqueSqls(this.tableSchema,referenceTableName,targetTableName,tableSuffix,tableInfo));
         allSql.forEach((String sql)->{jdbcTemplate.execute(sql);});
         return targetTableName;
+    }
+
+    private TableStructureService getTableStructureService() {
+        String dbType= sqlHelper.getDialectDBType();
+        if("oracle".equalsIgnoreCase(dbType)){
+            return oracleService;
+        }else if("postgresql".equalsIgnoreCase(dbType)){
+            return postgresqlService;
+        }else if("guassdb".equalsIgnoreCase(dbType)){
+            return guassdbService;
+        }else{
+            return mysqlService;
+        }
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        try{
+            String dbSchema=jdbcTemplate.getDataSource().getConnection().getCatalog();
+            if(StringUtil.isBlank(dbSchema)){
+                String dbType= sqlHelper.getDialectDBType();
+                if("postgresql".equalsIgnoreCase(dbType)||"guassdb".equalsIgnoreCase(dbType)){
+                    this.tableSchema="public";
+                }else{
+                    this.tableSchema="";
+                }
+            }else{
+                this.tableSchema=jdbcTemplate.getDataSource().getConnection().getCatalog();
+            }
+
+        }catch (Exception e){
+            log.error("{}get db schema fail！", LOG_TITLE, e);
+        }
+
     }
 }

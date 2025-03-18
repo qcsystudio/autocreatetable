@@ -33,6 +33,8 @@ public class TableStructureServiceMysqlImpl implements TableStructureService {
     Pattern INDEX_PATTERN = Pattern.compile("KEY `(.*)` \\(.*\\) USING ([0-9A-Za-z ]*)");
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private SqlHelper sqlHelper;
     /**
      * get exists tables by table info
      * @param schema database schema
@@ -41,7 +43,7 @@ public class TableStructureServiceMysqlImpl implements TableStructureService {
      */
     @Override
     public List<String> getExistsTables(String schema, TableInfo tableInfo) {
-        String sql = SqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLENAMES);
+        String sql = sqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLENAMES);
         String tableName =StringUtil.replaceStance(tableInfo.getTableNameExtension(),"%").toUpperCase() ;
         //替换sql式内
         sql = StringUtil.replaceStance(sql,schema, tableName);
@@ -65,7 +67,7 @@ public class TableStructureServiceMysqlImpl implements TableStructureService {
      */
     @Override
     public List<String> getCreateTableSql(String schema, String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
-        String createQuerySql = SqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLE_CREATESQL);
+        String createQuerySql = sqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLE_CREATESQL);
         createQuerySql = StringUtil.replaceStance(createQuerySql, structureTablename);
         Map createTableSqlList = jdbcTemplate.queryForMap(createQuerySql, null);
         String createTableSql = createTableSqlList.get("create table").toString();
@@ -117,13 +119,13 @@ public class TableStructureServiceMysqlImpl implements TableStructureService {
      */
     @Override
     public List<String> getCreateTriggerSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
-        String queryTriggerNameSql = StringUtil.replaceStance(SqlHelper.getSql("query_table_triggers"),schema, structureTablename);
+        String queryTriggerNameSql = StringUtil.replaceStance(sqlHelper.getSql("query_table_triggers"),schema, structureTablename);
         List<String> triggerNameList = jdbcTemplate.queryForList(queryTriggerNameSql).stream().map((a) -> {
             Map node=MapUtil.toCamelCaseMap(a);
             return node.get("triggerName") + "";
         }).collect(Collectors.toList());
         List<String> createTriggerSqlList = new ArrayList<>();
-        String queryCreateTriggerSqlByTriggerName = SqlHelper.getSql("query_table_triggercreate");
+        String queryCreateTriggerSqlByTriggerName = sqlHelper.getSql("query_table_triggercreate");
         for (String triggerName : triggerNameList) {
             List<String> createTriggerSqlRowList = jdbcTemplate.queryForList(StringUtil.replaceStance(queryCreateTriggerSqlByTriggerName, triggerName)).stream().map((a) -> {
                 return a.get("sql original statement") + "";

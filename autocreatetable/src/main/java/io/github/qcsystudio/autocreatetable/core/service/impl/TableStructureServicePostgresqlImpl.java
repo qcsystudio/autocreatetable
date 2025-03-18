@@ -30,6 +30,8 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
     private final static String TABLE_SUFFIX_RGX="(_)([1-2][0,9][0-9]{4})";
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private SqlHelper sqlHelper;
 
     /**
      * get exists tables by table info
@@ -39,7 +41,7 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
      */
     @Override
     public List<String> getExistsTables(String schema, TableInfo tableInfo) {
-        String sql = SqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLENAMES);
+        String sql = sqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLENAMES);
         String tableName = StringUtil.replaceStance(tableInfo.getTableNameExtension(),"%").toUpperCase() ;
         //替换sql式内
         sql = StringUtil.replaceStance(sql,schema, tableName);
@@ -63,7 +65,7 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
      */
     @Override
     public List<String> getCreateTableSql(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
-        String createQuerySql = SqlHelper.getSql( CommonConstant.SQLKEY_QUERY_TABLE_CREATESQL);
+        String createQuerySql = sqlHelper.getSql( CommonConstant.SQLKEY_QUERY_TABLE_CREATESQL);
         createQuerySql = StringUtil.replaceStance(createQuerySql, structureTablename);
         Map createTableSqlList = jdbcTemplate.queryForMap(createQuerySql, null);
         String createTableSql = createTableSqlList.get("create table").toString();
@@ -95,7 +97,7 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
         Map<String,Object> params = new HashMap<>();
         params.put("tableSchema", schema);
         params.put("tableName", structureTablename);
-        String queryIndexNameSql =StringUtil.replaceStance(SqlHelper.getSql( "query_table_indexs"), params);
+        String queryIndexNameSql =StringUtil.replaceStance(sqlHelper.getSql( "query_table_indexs"), params);
         Map<String, String> indexNames = jdbcTemplate.queryForList(queryIndexNameSql)
                 .stream().map((a)->{
                     Map node= MapUtil.toCamelCaseMap(a);
@@ -116,7 +118,7 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
         Pattern finalSuffixPattern = suffixPattern;
         List<String> result=new ArrayList<>();
         for (String indexName : indexNames.keySet()) {
-            String queryIndexCreateSql =StringUtil.replaceStance(SqlHelper.getSql( "query_table_indexscreate"),schema, structureTablename, indexName);
+            String queryIndexCreateSql =StringUtil.replaceStance(sqlHelper.getSql( "query_table_indexscreate"),schema, structureTablename, indexName);
             result.addAll(jdbcTemplate.queryForList(queryIndexCreateSql).stream().map((Map a)->{
                 Map node= MapUtil.toCamelCaseMap(a);
                 String indexSql=node.get(CommonConstant.CNAME_INDEX_SQL)+"";
@@ -143,13 +145,13 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
      */
     @Override
     public List<String> getCreateTriggerSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
-        String queryTriggerNameSql = StringUtil.replaceStance(SqlHelper.getSql("query_table_triggers"),schema, structureTablename);
+        String queryTriggerNameSql = StringUtil.replaceStance(sqlHelper.getSql("query_table_triggers"),schema, structureTablename);
         List<String> triggerNameList = jdbcTemplate.queryForList(queryTriggerNameSql).stream().map((a) -> {
             Map node= MapUtil.toCamelCaseMap(a);
             return a.get("triggerName") + "";
         }).collect(Collectors.toList());
         List<String> createTriggerSqlList = new ArrayList<>();
-        String queryCreateTriggerSqlByTriggerName = SqlHelper.getSql( "query_table_triggercreate");
+        String queryCreateTriggerSqlByTriggerName = sqlHelper.getSql( "query_table_triggercreate");
         Pattern suffixPattern =null;
         if(StringUtil.isNotBlank(tableSuffix)&&null!=tableInfo){
             suffixPattern=Pattern.compile(tableInfo.getSuffixPattern());

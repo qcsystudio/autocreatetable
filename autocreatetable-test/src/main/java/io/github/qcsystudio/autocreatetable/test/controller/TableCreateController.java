@@ -1,6 +1,6 @@
 package io.github.qcsystudio.autocreatetable.test.controller;
 
-import com.qcsy.autocreatetable.core.service.TableCreateService;
+import io.github.qcsystudio.autocreatetable.core.service.TableCreateService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;

@@ -9,6 +9,3 @@ spring:
     url: jdbc:mysql://xxxx:xxx/xxx?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&rewriteBatchedStatements=true&serverTimezone=Asia/Shanghai
     username: xxxx
     password: xxxx
-#set database type if null will use spring.jpa.database
-tablecreate:
-  dbtype: mysql

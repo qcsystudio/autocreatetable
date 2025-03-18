@@ -1,14 +1,17 @@
 package io.github.qcsystudio.autocreatetable.core.helper;
 
+import io.github.qcsystudio.autocreatetable.core.utils.StringUtil;
 import lombok.SneakyThrows;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Scope;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.util.List;
@@ -19,25 +22,23 @@ import java.util.List;
  * @author qcsy
  * @version 2025/3/11
  */
-@Component
-public class SqlHelper {
+@Service
+@Scope("singleton")
+public class SqlHelper implements InitializingBean {
 
-    private static String dbtype;
-
-    private static ResourceLoader resourceLoader;
-
+    private String dbtype;
     @Autowired
-    public SqlHelper(@Value("${tablecreate.dbtype:mysql}") String  dbtype, ResourceLoader resourceLoader ) {
-        SqlHelper.dbtype=dbtype;
-        SqlHelper.resourceLoader=resourceLoader;
-    }
-
+    private ResourceLoader resourceLoader;
+    @Value("${tablecreate.dbtype:}")
+    private String  createDbType;
+    @Value("${spring.jpa.database:mysql}")
+    private String  jpaDbType;
     /**
      * get sql
      * @param sqlType sql类型
      * @return sql
      */
-    public static String getSql(String sqlType){
+    public String getSql(String sqlType){
         return getSql(sqlType,dbtype);
     }
 
@@ -47,7 +48,7 @@ public class SqlHelper {
      * @param dbtype 数据库乐享
      * @return sql
      */
-    public static String getSql(String sqlType,String dbtype){
+    public String getSql(String sqlType,String dbtype){
        return getSql("tablecreate.xml",sqlType,dbtype);
     }
 
@@ -59,7 +60,7 @@ public class SqlHelper {
      * @return sql
      */
     @SneakyThrows
-    public static String getSql(String fileName, String sqlType, String dbtype){
+    public String getSql(String fileName, String sqlType, String dbtype){
         String daoXmlClassPath =String.format("classpath:mapper/%s",fileName);
         Document xmlDoc = createDoc(resourceLoader.getResource(daoXmlClassPath).getInputStream());
         List<Node> daoList = xmlDoc.selectNodes("/mapper/sql");
@@ -96,7 +97,16 @@ public class SqlHelper {
      * get dialect db type
      * @return db type
      */
-    public static String getDialectDBType() {
+    public String getDialectDBType() {
         return dbtype;
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        if(StringUtil.isNotBlank(createDbType)){
+            dbtype=createDbType;
+        }else{
+            dbtype=jpaDbType;
+        }
     }
 }

@@ -20,25 +20,34 @@
     </properties>
     <dependencies>
         <dependency>
-            <groupId>com.qcsy.autocreatetable</groupId>
-            <artifactId>autocreatetable-core</artifactId>
-            <version>1.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+		<dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 <!--        <dependency>-->
 <!--            <groupId>org.postgresql</groupId>-->
 <!--            <artifactId>postgresql</artifactId>-->
 <!--        </dependency>-->
+<!--        <dependency>-->
+<!--           <groupId>mysql</groupId>-->
+<!--           <artifactId>mysql-connector-java</artifactId>-->
+<!--        </dependency>-->
         <dependency>
-           <groupId>mysql</groupId>
-           <artifactId>mysql-connector-java</artifactId>
+            <groupId>com.oracle.database.jdbc</groupId>
+            <artifactId>ojdbc6</artifactId>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.qcsystudio</groupId>
+            <artifactId>autocreatetable</artifactId>
+            <version>1.0</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
     <repositories>
