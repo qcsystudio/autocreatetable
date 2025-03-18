@@ -33,7 +33,7 @@ Database support:
 <dependency>
     <groupId>io.github.qcsystudio</groupId>
     <artifactId>autocreatetable</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
 </dependency>
 
 ```
@@ -56,6 +56,9 @@ createtable:
     # default use max month table name to reference. 
     # you can usexxxx_$\{yyyyMM\}:referenceTableName to set up a reference table name. [max] is use max month table . [min] is use min month table .
     tables: xxxx_$\{yyyyMM\} 
+    # target database type support mysql、oracle、postgresql、guassdb.if null will use spring.jpa.database。
+    # if spring.jpa.database and autocreatetable.dbtype is null will use mysql
+  dbtype: 
  
 ```
 

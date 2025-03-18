@@ -54,8 +54,10 @@ createtable:
   target:
     # 表名配置，支持变量： ${yyyyMM}、${yyyyMMdd}、${yyMM}、${yyyy}。
     # 默认以月表最大表为参考表。可以通过xxxx_$\{yyyyMM\}:参考表名 来指定参考表。[max]指使用最大月表为参考表。[min]指使用最小月表为参考表。
-    tables: xxxx_$\{yyyyMM\} 
-
+    tables: xxxx_$\{yyyyMM\}
+    # 目标数据库类型，支持 mysql、oracle、postgresql、guassdb 
+    # 如果为空的话会使用 spring.jpa.database。如果 spring.jpa.database 和 autocreatetable.dbtype 都为空的话会使用 mysql
+  dbtype: 
 ```
 #### 参与贡献
 

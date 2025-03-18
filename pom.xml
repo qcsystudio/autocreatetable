@@ -5,7 +5,7 @@
 
     <groupId>io.github.qcsystudio</groupId>
     <artifactId>autocreatetable-parent</artifactId>
-    <version>1.0</version>
+	<version>1.0</version>
     <packaging>pom</packaging>
     <name>autocreatetable</name>
     <description>a component base on springboot  to auto create table </description>
@@ -29,7 +29,6 @@
         <postgresql.version>42.7.4</postgresql.version>
         <oracle.version>11.2.0.4</oracle.version>
     </properties>
-
     <dependencies>
         <!--Lombok-->
         <dependency>
