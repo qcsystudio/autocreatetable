@@ -25,7 +25,7 @@
 - guassdb(未验证)
 #### 安装教程
 
-- 单独运行系统，可以直接配合autocreatetable-app单独运行系统。
+- 单独运行系统，可以直接配合autocreatetable-test单独运行系统,切记删除controller 包，否则会有sql 输入漏洞。
 - 集成到原有系统中，可以直接在原有系统中配置集成autocreatetable-core包。
 
 #### 配置

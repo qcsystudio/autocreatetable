@@ -24,7 +24,7 @@ Database support:
 - guassdb(not verified)
 
 #### Installation
-- Run the system independently. You can directly run the system with autocreatetable-app.
+- When running the system independently, it can be directly used with autocreatetable-test. Ensure to delete the controller package, otherwise it may introduce SQL injection vulnerabilities.
 - Integrated into the original system, you can directly configure the autocreatetable-core package on the original system.
 
 #### configuration
