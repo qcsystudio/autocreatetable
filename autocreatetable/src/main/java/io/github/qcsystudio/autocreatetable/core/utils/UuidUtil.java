@@ -1,5 +1,7 @@
 package io.github.qcsystudio.autocreatetable.core.utils;
 
+import java.util.UUID;
+
 /**
  * Description:
  *
@@ -12,6 +14,6 @@ public class UuidUtil {
      * @return short uuid
      */
     public static String getUuid() {
-        return java.util.UUID.randomUUID().toString().replace("-", "");
+        return UUID.randomUUID().toString().replace("-", "").substring(0,16);
     }
 }
