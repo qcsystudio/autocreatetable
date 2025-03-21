@@ -46,9 +46,8 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
         String sql = sqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLENAMES);
         String tableName = StringUtil.replaceStance(tableInfo.getTableNameExtension(), "%");
         //替换sql式内
-        sql = StringUtil.replaceStance(sql, tableName);
         Pattern pattern = Pattern.compile(String.format("^%s$", StringUtil.replaceStance(tableInfo.getTableNameExtension(), tableInfo.getSuffixPattern())));
-        List<String> tableList = jdbcTemplate.queryForList(sql).stream().map((a) -> {
+        List<String> tableList = jdbcTemplate.queryForList(sql,tableName).stream().map((a) -> {
             Map node = MapUtil.toCamelCaseMap(a);
             return node.get(CommonConstant.CNAME_TABLE_NAME) + "";
         }).filter((a) -> {
@@ -88,7 +87,7 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
         createTableSql = createTableSqlTemp.toString();
         //remove index
         createTableSql = createTableSql.replaceAll("USING INDEX ([^,]*) ENABLE", "");
-        List<Map<String, Object>> columCommentList = jdbcTemplate.queryForList(StringUtil.replaceStance(sqlHelper.getSql("query_table_comments"), structureTablename));
+        List<Map<String, Object>> columCommentList = jdbcTemplate.queryForList(sqlHelper.getSql("query_table_comments"), structureTablename);
         List<String> result = new ArrayList<>();
         result.add(createTableSql);
         columCommentList.stream().forEach((Map a) -> {
@@ -137,7 +136,7 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
         }, (String a, String b) -> {
             return String.format("%s,%s", a, b);
         })).values();
-        String queryIndexNameSql = StringUtil.replaceStance(sqlHelper.getSql("query_table_indexs"), structureTablename);
+        String queryIndexNameSql =sqlHelper.getSql("query_table_indexs");
         String indexNameKey = "indexName";
         Map<String, String> tempIndexNames = jdbcTemplate.queryForList(queryIndexNameSql, structureTablename).stream()
                 .map((a) -> {
@@ -199,16 +198,15 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
      * @return result
      */
     public List<String> getCreateTriggerSqls(String schema, String structureTablename, String createTableName, String tableSuffix, TableInfo tableInfo) {
-        String queryTriggerNameSql = StringUtil.replaceStance(sqlHelper.getSql("query_table_triggers"), structureTablename);
-
-        List<String> triggerNameList = jdbcTemplate.queryForList(queryTriggerNameSql).stream().map((a) -> {
+        String queryTriggerNameSql =sqlHelper.getSql("query_table_triggers");
+        List<String> triggerNameList = jdbcTemplate.queryForList(queryTriggerNameSql,structureTablename).stream().map((a) -> {
             Map node = MapUtil.toCamelCaseMap(a);
             return node.get("triggerName") + "";
         }).collect(Collectors.toList());
         List<String> createTriggerSqlList = new ArrayList<>();
         String queryCreateTriggerSqlByTriggerName = sqlHelper.getSql("query_table_triggercreate");
         for (String triggerName : triggerNameList) {
-            List<String> createTriggerSqlRowList = jdbcTemplate.queryForList(StringUtil.replaceStance(queryCreateTriggerSqlByTriggerName, triggerName)).stream().map((a) -> {
+            List<String> createTriggerSqlRowList = jdbcTemplate.queryForList(queryCreateTriggerSqlByTriggerName, triggerName).stream().map((a) -> {
                 Map node = new CaseInsensitiveMap(a);
                 return node.get("a") + "";
             }).collect(Collectors.toList());

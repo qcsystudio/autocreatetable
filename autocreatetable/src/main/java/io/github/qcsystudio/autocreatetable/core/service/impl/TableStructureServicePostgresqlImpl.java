@@ -44,9 +44,8 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
         String sql = sqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLENAMES);
         String tableName = StringUtil.replaceStance(tableInfo.getTableNameExtension(),"%").toUpperCase() ;
         //替换sql式内
-        sql = StringUtil.replaceStance(sql,schema, tableName);
         Pattern pattern = Pattern.compile(String.format("^%s$",StringUtil.replaceStance(tableInfo.getTableNameExtension(),tableInfo.getSuffixPattern())));
-        List<String> tableList = jdbcTemplate.queryForList(sql).stream().map((a) -> {
+        List<String> tableList = jdbcTemplate.queryForList(sql,schema, tableName).stream().map((a) -> {
             Map node=MapUtil.toCamelCaseMap(a);
             return node.get(CommonConstant.CNAME_TABLE_NAME) + "";
         }).filter((a) -> {
@@ -94,11 +93,8 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
      */
     @Override
     public List<String> getCreateIndexSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
-        Map<String,Object> params = new HashMap<>();
-        params.put("tableSchema", schema);
-        params.put("tableName", structureTablename);
-        String queryIndexNameSql =StringUtil.replaceStance(sqlHelper.getSql( "query_table_indexs"), params);
-        Map<String, String> indexNames = jdbcTemplate.queryForList(queryIndexNameSql)
+        String queryIndexNameSql =sqlHelper.getSql( "query_table_indexs");
+        Map<String, String> indexNames = jdbcTemplate.queryForList(queryIndexNameSql,schema,structureTablename)
                 .stream().map((a)->{
                     Map node= MapUtil.toCamelCaseMap(a);
                     return node;
@@ -118,8 +114,8 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
         Pattern finalSuffixPattern = suffixPattern;
         List<String> result=new ArrayList<>();
         for (String indexName : indexNames.keySet()) {
-            String queryIndexCreateSql =StringUtil.replaceStance(sqlHelper.getSql( "query_table_indexscreate"),schema, structureTablename, indexName);
-            result.addAll(jdbcTemplate.queryForList(queryIndexCreateSql).stream().map((Map a)->{
+            String queryIndexCreateSql =sqlHelper.getSql( "query_table_indexscreate");
+            result.addAll(jdbcTemplate.queryForList(queryIndexCreateSql,schema, structureTablename, indexName).stream().map((Map a)->{
                 Map node= MapUtil.toCamelCaseMap(a);
                 String indexSql=node.get(CommonConstant.CNAME_INDEX_SQL)+"";
                 if(finalSuffixPattern.matcher(indexName).find()){
@@ -145,8 +141,8 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
      */
     @Override
     public List<String> getCreateTriggerSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
-        String queryTriggerNameSql = StringUtil.replaceStance(sqlHelper.getSql("query_table_triggers"),schema, structureTablename);
-        List<String> triggerNameList = jdbcTemplate.queryForList(queryTriggerNameSql).stream().map((a) -> {
+        String queryTriggerNameSql =sqlHelper.getSql("query_table_triggers");
+        List<String> triggerNameList = jdbcTemplate.queryForList(queryTriggerNameSql,schema, structureTablename).stream().map((a) -> {
             Map node= MapUtil.toCamelCaseMap(a);
             return a.get("triggerName") + "";
         }).collect(Collectors.toList());

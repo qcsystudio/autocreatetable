@@ -4,23 +4,23 @@
     <sql id="query_tablenames">
         <common>
             <![CDATA[
-            select table_name from information_schema.tables where table_schema='${tableSchema}' and upper(table_name) like '${tableName}'
+            select table_name from information_schema.tables where table_schema=? and upper(table_name) like ?
             ]]>
         </common>
         <oracle>
             <![CDATA[
-                SELECT TABLE_NAME FROM USER_TABLES WHERE UPPER(TABLE_NAME) LIKE '${tableName}' ORDER BY TABLE_NAME DESC
+                SELECT TABLE_NAME FROM USER_TABLES WHERE UPPER(TABLE_NAME) LIKE ? ORDER BY TABLE_NAME DESC
             ]]>
         </oracle>
     </sql>
     <!--查询依据表是否存在-->
     <sql id="query_table_exist">
         <common>
-            select 1 from information_schema.tables where table_schema='${tableSchema}' and upper(table_name) like '${tableName}%'
+            select 1 from information_schema.tables where table_schema=? and upper(table_name) like ?
         </common>
         <oracle>
             <![CDATA[
-                select 1 from user_tables where UPPER(table_name) ='${tableName}'
+                select 1 from user_tables where UPPER(table_name) =?
             ]]>
         </oracle>
     </sql>
@@ -47,7 +47,7 @@
     <sql id="query_table_comments">
         <oracle>
             <![CDATA[
-                  SELECT TABLE_NAME,COLUMN_NAME,COMMENTS from user_col_comments where table_name = '${tableName}' and COMMENTS IS NOT NULL
+                  SELECT TABLE_NAME,COLUMN_NAME,COMMENTS from user_col_comments where table_name = ? and COMMENTS IS NOT NULL
             ]]>
         </oracle>
     </sql>
@@ -56,7 +56,7 @@
     <sql id="query_table_indexs">
         <common>
             <![CDATA[
-             SELECT index_name,column_name FROM INFORMATION_SCHEMA.statistics WHERE table_schema = '${tableSchema}' AND upper(table_name) = '${tableName}' and upper(column_name)!='ID'
+             SELECT index_name,column_name FROM INFORMATION_SCHEMA.statistics WHERE table_schema = ? AND upper(table_name) = ? and upper(column_name)!='ID'
             ]]>
         </common>
         <oracle>
@@ -81,8 +81,8 @@
                     ON ci.oid = ii.indexrelid
                   LEFT JOIN pg_attribute ai
                     ON ci.oid = ai.attrelid
-                WHERE  t.schemaname = '${tableSchema}'
-                     and  upper(t.tablename) = upper('${tableName}')
+                WHERE  t.schemaname = ?
+                     and  upper(t.tablename) = ?
                 ORDER BY t.tablename, i.indexname, ai.attname;
             ]]>
         </guassdb>
@@ -102,8 +102,8 @@
                     information_schema.table_constraints tc
                 where
                     tc.constraint_type = 'PRIMARY KEY'
-                    and tc.table_schema = '${tableSchema}'
-                    and upper(tc.table_name) = '${tableName}')
+                    and tc.table_schema = ?
+                    and upper(tc.table_name) = ?)
             ]]>
         </postgresql>
     </sql>
@@ -117,7 +117,7 @@
             <![CDATA[
              SELECT indexname as index_name, indexdef as index_sql
                 FROM pg_indexes
-             where schemaname = '${tableSchema}' AND upper(tablename) = '${tableName}' and indexname in('${indexNames}')    ;
+             where schemaname = ? AND upper(tablename) = ? and indexname =?
             ]]>
         </postgresql>
     </sql>
@@ -142,18 +142,18 @@
     <!--查询触发器信息-->
     <sql id="query_table_triggers">
         <common>
-            SELECT TRIGGER_NAME FROM information_schema.triggers WHERE TRIGGER_SCHEMA = '${tableSchema}' AND upper(EVENT_OBJECT_TABLE)  = '${tableName}';
+            SELECT TRIGGER_NAME FROM information_schema.triggers WHERE TRIGGER_SCHEMA = ? AND upper(EVENT_OBJECT_TABLE)  = ?;
         </common>
         <oracle>
             <![CDATA[
-             select trigger_name from all_triggers where table_name='${tableName}'
+             select trigger_name from all_triggers where table_name=?
             ]]>
         </oracle>
     </sql>
     <sql id="query_table_triggercreate">
         <oracle>
             <![CDATA[
-            select a.text as a from all_source a where type='TRIGGER' AND name='${triggerName}' ORDER BY line
+            select a.text as a from all_source a where type='TRIGGER' AND name=? ORDER BY line
             ]]>
         </oracle>
         <mysql>

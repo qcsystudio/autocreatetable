@@ -46,9 +46,8 @@ public class TableStructureServiceMysqlImpl implements TableStructureService {
         String sql = sqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLENAMES);
         String tableName =StringUtil.replaceStance(tableInfo.getTableNameExtension(),"%").toUpperCase() ;
         //替换sql式内
-        sql = StringUtil.replaceStance(sql,schema, tableName);
         Pattern pattern = Pattern.compile(String.format("^%s$",StringUtil.replaceStance(tableInfo.getTableNameExtension(),tableInfo.getSuffixPattern())));
-        List<String> tableList = jdbcTemplate.queryForList(sql).stream().map((a) -> {
+        List<String> tableList = jdbcTemplate.queryForList(sql,schema, tableName).stream().map((a) -> {
             Map node=MapUtil.toCamelCaseMap(a);
             return node.get("tableName") + "";
         }).filter((a) -> {
@@ -119,8 +118,8 @@ public class TableStructureServiceMysqlImpl implements TableStructureService {
      */
     @Override
     public List<String> getCreateTriggerSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
-        String queryTriggerNameSql = StringUtil.replaceStance(sqlHelper.getSql("query_table_triggers"),schema, structureTablename);
-        List<String> triggerNameList = jdbcTemplate.queryForList(queryTriggerNameSql).stream().map((a) -> {
+        String queryTriggerNameSql = sqlHelper.getSql("query_table_triggers");
+        List<String> triggerNameList = jdbcTemplate.queryForList(queryTriggerNameSql,schema, structureTablename).stream().map((a) -> {
             Map node=MapUtil.toCamelCaseMap(a);
             return node.get("triggerName") + "";
         }).collect(Collectors.toList());

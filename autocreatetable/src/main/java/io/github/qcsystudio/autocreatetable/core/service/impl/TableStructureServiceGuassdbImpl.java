@@ -46,9 +46,8 @@ public class TableStructureServiceGuassdbImpl implements TableStructureService {
         String sql = sqlHelper.getSql(CommonConstant.SQLKEY_QUERY_TABLENAMES);
         String tableName = StringUtil.replaceStance(tableInfo.getTableNameExtension(),"%") ;
         //替换sql式内
-        sql = StringUtil.replaceStance(sql,schema, tableName);
         Pattern pattern = Pattern.compile(String.format("^%s$",StringUtil.replaceStance(tableInfo.getTableNameExtension(),tableInfo.getSuffixPattern())));
-        List<String> tableList = jdbcTemplate.queryForList(sql).stream().map((a) -> {
+        List<String> tableList = jdbcTemplate.queryForList(sql,schema, tableName).stream().map((a) -> {
             Map node= MapUtil.toCamelCaseMap(a);
             return node.get("tableName") + "";
         }).filter((a) -> {
@@ -84,8 +83,8 @@ public class TableStructureServiceGuassdbImpl implements TableStructureService {
      */
     @Override
     public List<String> getCreateIndexSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo){
-        String queryIndexNameSql =StringUtil.replaceStance(sqlHelper.getSql("query_table_indexs"),schema, structureTablename);
-        List<Map<String, Object>> indexs=jdbcTemplate.queryForList(queryIndexNameSql);
+        String queryIndexNameSql =sqlHelper.getSql("query_table_indexs");
+        List<Map<String, Object>> indexs=jdbcTemplate.queryForList(queryIndexNameSql,schema,structureTablename);
         return indexs.stream().map((Map a)->{
             Map node=MapUtil.toCamelCaseMap(a);
             String indexName=node.get("indexName")+"";
@@ -117,8 +116,8 @@ public class TableStructureServiceGuassdbImpl implements TableStructureService {
      * @return result
      */
     public List<String> getCreateTriggerSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
-        String queryTriggerNameSql = StringUtil.replaceStance(sqlHelper.getSql("query_table_triggers"),schema, structureTablename);
-        List<String> triggerNameList =jdbcTemplate.queryForList(queryTriggerNameSql).stream().map((a) -> {
+        String queryTriggerNameSql =sqlHelper.getSql("query_table_triggers");
+        List<String> triggerNameList =jdbcTemplate.queryForList(queryTriggerNameSql,schema, structureTablename).stream().map((a) -> {
             Map node=MapUtil.toCamelCaseMap(a);
             return a.get("triggerName") + "";
         }).collect(Collectors.toList());
