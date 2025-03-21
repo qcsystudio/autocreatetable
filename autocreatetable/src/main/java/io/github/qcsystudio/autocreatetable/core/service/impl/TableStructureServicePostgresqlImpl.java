@@ -94,7 +94,7 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
     @Override
     public List<String> getCreateIndexSqls(String schema,String structureTablename,String createTableName,String tableSuffix,TableInfo tableInfo) {
         String queryIndexNameSql =sqlHelper.getSql( "query_table_indexs");
-        Map<String, String> indexNames = jdbcTemplate.queryForList(queryIndexNameSql,schema,structureTablename)
+        Map<String, String> indexNames = jdbcTemplate.queryForList(queryIndexNameSql,schema,structureTablename,schema,structureTablename)
                 .stream().map((a)->{
                     Map node= MapUtil.toCamelCaseMap(a);
                     return node;

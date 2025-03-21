@@ -93,8 +93,8 @@
             from
                 INFORMATION_SCHEMA.statistics
             where
-                table_schema = '${tableSchema}'
-                and upper(table_name) = '${tableName}'
+                table_schema = ?
+                and upper(table_name) = ?
                 and index_name not in (
                 select
                     constraint_name

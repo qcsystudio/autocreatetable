@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,7 @@ public class TableCreateServiceImpl implements TableCreateService, InitializingB
     /**
      * db schema
      */
+    @Value("${spring.datasource.schema:}")
     private String tableSchema;
     @Resource(name = "table-structure-oracle")
     private TableStructureService oracleService;
@@ -159,18 +161,14 @@ public class TableCreateServiceImpl implements TableCreateService, InitializingB
     @Override
     public void afterPropertiesSet() throws Exception {
         try{
-            String dbSchema=jdbcTemplate.getDataSource().getConnection().getCatalog();
-            if(StringUtil.isBlank(dbSchema)){
+            if(StringUtil.isBlank(tableSchema)){
                 String dbType= sqlHelper.getDialectDBType();
                 if("postgresql".equalsIgnoreCase(dbType)||"guassdb".equalsIgnoreCase(dbType)){
                     this.tableSchema="public";
                 }else{
-                    this.tableSchema="";
+                    this.tableSchema=jdbcTemplate.getDataSource().getConnection().getCatalog();;
                 }
-            }else{
-                this.tableSchema=jdbcTemplate.getDataSource().getConnection().getCatalog();
             }
-
         }catch (Exception e){
             log.error("{}get db schema fail！", LOG_TITLE, e);
         }
