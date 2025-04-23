@@ -61,9 +61,9 @@ public class AutoTableCreateService implements CommandLineRunner {
         String split=":";
         LocalDate now = LocalDate.now();
         //当月第一天
-        LocalDateTime startDate= now.plusMonths(1).withDayOfMonth(1).atStartOfDay();
+        LocalDateTime startDate= now.withDayOfMonth(1).atStartOfDay();
         //三月后的最后一天
-        LocalDateTime endDate= now.plusMonths(4).withDayOfMonth(1).minusDays(1).atStartOfDay();
+        LocalDateTime endDate= now.plusMonths(3).withDayOfMonth(1).minusDays(1).atStartOfDay();
         if(StringUtil.isBlank(targetTableName)){
             log.error("{}cannot Find config table",LOG_TITLE);
             return new ArrayList<>();
