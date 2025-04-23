@@ -34,7 +34,7 @@
 <dependency>
     <groupId>io.github.qcsystudio</groupId>
     <artifactId>autocreatetable</artifactId>
-    <version>1.1</version>
+    <version>1.4</version>
 </dependency>
 
 ```

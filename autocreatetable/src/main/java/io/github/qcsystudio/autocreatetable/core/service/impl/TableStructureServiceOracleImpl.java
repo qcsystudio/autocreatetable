@@ -1,12 +1,11 @@
 package io.github.qcsystudio.autocreatetable.core.service.impl;
 
-import cn.hutool.core.map.CaseInsensitiveMap;
-import cn.hutool.core.map.MapUtil;
 import io.github.qcsystudio.autocreatetable.core.constant.CommonConstant;
 import io.github.qcsystudio.autocreatetable.core.domain.TableInfo;
 import io.github.qcsystudio.autocreatetable.core.helper.SqlHelper;
 import io.github.qcsystudio.autocreatetable.core.service.TableStructureService;
 import io.github.qcsystudio.autocreatetable.core.utils.DbUtil;
+import io.github.qcsystudio.autocreatetable.core.utils.MapUtil;
 import io.github.qcsystudio.autocreatetable.core.utils.StringUtil;
 import io.github.qcsystudio.autocreatetable.core.utils.UuidUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -148,10 +147,6 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
                     } else {
                         return a.get(indexNameKey).toString().compareTo(b.get(indexNameKey).toString());
                     }
-                })
-                .map((a) -> {
-                    Map node = MapUtil.toCamelCaseMap(a);
-                    return node;
                 }).collect(Collectors.toMap((k) -> {
                     return k.get(indexNameKey) + "";
                 }, (v) -> {
@@ -207,7 +202,7 @@ public class TableStructureServiceOracleImpl implements TableStructureService {
         String queryCreateTriggerSqlByTriggerName = sqlHelper.getSql("query_table_triggercreate");
         for (String triggerName : triggerNameList) {
             List<String> createTriggerSqlRowList = jdbcTemplate.queryForList(queryCreateTriggerSqlByTriggerName, triggerName).stream().map((a) -> {
-                Map node = new CaseInsensitiveMap(a);
+                Map node = MapUtil.toCamelCaseMap(a);
                 return node.get("a") + "";
             }).collect(Collectors.toList());
             StringBuilder stringBuilder = new StringBuilder("CREATE ");

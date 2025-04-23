@@ -1,11 +1,11 @@
 package io.github.qcsystudio.autocreatetable.core.service.impl;
 
-import cn.hutool.core.map.MapUtil;
 import io.github.qcsystudio.autocreatetable.core.constant.CommonConstant;
 import io.github.qcsystudio.autocreatetable.core.domain.TableInfo;
 import io.github.qcsystudio.autocreatetable.core.helper.SqlHelper;
 import io.github.qcsystudio.autocreatetable.core.service.TableStructureService;
 import io.github.qcsystudio.autocreatetable.core.utils.DbUtil;
+import io.github.qcsystudio.autocreatetable.core.utils.MapUtil;
 import io.github.qcsystudio.autocreatetable.core.utils.StringUtil;
 import io.github.qcsystudio.autocreatetable.core.utils.UuidUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +46,7 @@ public class TableStructureServicePostgresqlImpl implements TableStructureServic
         //替换sql式内
         Pattern pattern = Pattern.compile(String.format("^%s$",StringUtil.replaceStance(tableInfo.getTableNameExtension(),tableInfo.getSuffixPattern())));
         List<String> tableList = jdbcTemplate.queryForList(sql,schema, tableName).stream().map((a) -> {
-            Map node=MapUtil.toCamelCaseMap(a);
+            Map node= MapUtil.toCamelCaseMap(a);
             return node.get(CommonConstant.CNAME_TABLE_NAME) + "";
         }).filter((a) -> {
             return pattern.matcher(a).find();

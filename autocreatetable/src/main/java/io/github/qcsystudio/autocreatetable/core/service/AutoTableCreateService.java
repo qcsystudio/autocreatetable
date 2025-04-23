@@ -79,7 +79,7 @@ public class AutoTableCreateService implements CommandLineRunner {
             }
             result.addAll(tableCreateService.createTable(tableName,startDate,endDate,referenceTableName));
         });
-        log.info("{} auto create tables:{}",LOG_TITLE, StringUtil.join(",",result));
+        log.info("{} auto create tables:{}",LOG_TITLE, StringUtil.join(result.iterator(),","));
         return result;
     }
 

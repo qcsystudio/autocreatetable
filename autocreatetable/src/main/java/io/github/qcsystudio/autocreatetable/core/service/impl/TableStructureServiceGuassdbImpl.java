@@ -1,10 +1,10 @@
 package io.github.qcsystudio.autocreatetable.core.service.impl;
 
-import cn.hutool.core.map.MapUtil;
 import io.github.qcsystudio.autocreatetable.core.constant.CommonConstant;
 import io.github.qcsystudio.autocreatetable.core.domain.TableInfo;
 import io.github.qcsystudio.autocreatetable.core.helper.SqlHelper;
 import io.github.qcsystudio.autocreatetable.core.service.TableStructureService;
+import io.github.qcsystudio.autocreatetable.core.utils.MapUtil;
 import io.github.qcsystudio.autocreatetable.core.utils.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
